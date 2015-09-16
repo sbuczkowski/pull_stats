@@ -22,20 +22,6 @@ cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' 0.8 1.0 2.0 4.0 nan]; bit5=Aside[0=off,1=on]; bit6=Bside[0=off,1=on];' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
-runKlayers = false;
-if runKlayers == true 
-    [sID, sTempPath] = genscratchpath();
-    klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
-                    'klayers_airs_wetwater'];
-end
-
-% Get proper frequencies for these data
-%**************************************************
-% where to get AIRS proper freqs???
-%**************************************************
-% $$$ [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_lowres_chans();
-% $$$ f = cris_vchan(2, userLW, userMW, userSW);
-
 basedir = fullfile('/asl/data/rtp_airibrad_v5/', ...
                    int2str(year), 'random');
 dayfiles = dir(fullfile(basedir, 'era_airibrad*_random.rtp'));
@@ -65,72 +51,34 @@ for giday = 1:length(dayfiles)
                       'mismatch in %s. Bypassing day.\n'], dayfiles(giday).name);
           continue;
       end
-
-      if runKlayers == true
-          % run klayers on the rtp data (Sergio is asking for this to
-          % convert levels to layers for his processing?)
-          fprintf(1, '>>> running klayers... ');
-          fn_rtp1 = fullfile(basedir,dayfiles(giday).name);
-          fn_rtp2 = fullfile(sTempPath, ['airs_' sID '_2.rtp']);
-          klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
-                         ' > ' sTempPath '/kout.txt'];
-          unix(klayers_run);
-          [h,ha,p,pa] = rtpread(fn_rtp2);
-          fprintf(1, 'Done\n');
-      end
-
-      % get column water
-% $$$       mmwater = mmwater_rtp(h, p);
       
       switch filter
         case 1
-          k = find(p.iudef(4,:) == 68); % descending node (night)
+          k = find(p.solzen >90); % descending node (night)
           sDescriptor='_desc';
         case 2
-% $$$           k = find(p.iudef(4,:) == 68 & p.landfrac == 0); % descending node
-% $$$                                                          % (night), ocean
           k = find(p.solzen > 90 & p.landfrac == 0); % descending
                                                      % node (night) ocean
           sDescriptor='_desc_ocean';
         case 3
-% $$$           k = find(p.iudef(4,:) == 68 & p.landfrac == 1); % descending node
-% $$$                                                         % (night), land
           k = find(p.solzen > 90 & p.landfrac == 1); % descending node
                                                         % (night), land
           sDescriptor='_desc_land';
         case 4
-          k = find(p.iudef(4,:) == 65); % ascending node (night)
+          k = find(p.solzen < 90); % ascending node (day)
           sDescriptor='_asc';
         case 5
-% $$$           k = find(p.iudef(4,:) == 65 & p.landfrac == 0); % ascending node
-% $$$                                                          % (night), ocean
           k = find(p.solzen < 90 & p.landfrac == 0); % ascending node
                                                          % (day), ocean
           sDescriptor='_asc_ocean';
         case 6
-% $$$           k = find(p.iudef(4,:) == 65 & p.landfrac == 1); % ascending node
-% $$$                                                         % (night), land
           k = find(p.solzen < 90 & p.landfrac == 1); % ascending node
                                                         % (day), land
           sDescriptor='_asc_land';
-        case 7
-          k = find(abs(p.rlat) < 30 & p.landfrac == 0); % tropical
-                                                        % ocean
-          sDescriptor='_tropocean';
-        case 8
-          k = find(abs(p.satzen) < 10 & p.solzen > 90 & p.landfrac ...
-                   == 0);
-          % ascending (night), ocean, near nadir
-          sDescriptor='_asc_ocean_nadir';
-        case 9
-          k = find(abs(p.satzen) < 10 & p.solzen < 90 & p.landfrac ...
-                   == 0);
-          % descending (day), ocean, near nadir
-          sDescriptor='_desc_ocean_nadir';
       end
 
       pp = rtp_sub_prof(p, k);
-% $$$       mmwater = mmwater(k);
+
       % Initialize counts
       [nedt,ab,ical] = calnum_to_data(p.calflag,cstr);
       n = length(p.rlat);
@@ -145,7 +93,6 @@ for giday = 1:length(dayfiles)
          pp.rcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
-% $$$       count(iday, :) = sum(count_all,2)';
 
       % Loop over latitude bins
       for ilat = 1:nlatbins-1
@@ -153,7 +100,6 @@ for giday = 1:length(dayfiles)
           inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
                      latbins(ilat+1));
           p = rtp_sub_prof(pp,inbin);
-% $$$           binwater = mmwater(inbin);
           bincount = count_all(:,inbin); 
           
 % Radiance mean and std
@@ -173,21 +119,10 @@ for giday = 1:length(dayfiles)
          rtime_mean(iday,ilat)  = nanmean(p.rtime);
          count(iday,ilat,:) = sum(bincount,2)';
          stemp_mean(iday,ilat) = nanmean(p.stemp);
-% $$$          ptemp_mean(iday,ilat,:) = nanmean(p.ptemp,2);
-% $$$          gas1_mean(iday,ilat,:) = nanmean(p.gas_1,2);
-% $$$          gas3_mean(iday,ilat,:) = nanmean(p.gas_3,2);
-% $$$          spres_mean(iday,ilat) = nanmean(p.spres);
-% $$$          nlevs_mean(iday,ilat) = nanmean(p.nlevs);
-% $$$          iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
-% $$$          mmwater_mean(iday,ilat) = nanmean(binwater);
-% $$$          satzen_mean(iday,ilat) = nanmean(p.satzen);
-% $$$          plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
          end  % end loop over latitudes
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-% $$$ eval_str = ['save ~/testoutput/rtp_airxbcal'  int2str(year) ...
-% $$$             '_rand' sDescriptor ' btobs btcal bias bias_std *_mean count '];
 eval_str = ['save ~/testoutput/rtp_airibrad'  int2str(year) ...
             '_random' sDescriptor ' btobs btcal bias bias_std *_mean count latbins'];
 eval(eval_str);
