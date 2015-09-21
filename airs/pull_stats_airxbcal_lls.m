@@ -118,7 +118,7 @@ for giday = 1:length(dayfiles)
          p.rcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
-      count(:,iday) = sum(count_all,2);
+      count(iday,:) = sum(count_all,2)';
       
 % Loop over obs in day
 % Radiance mean and std
