@@ -54,25 +54,25 @@ for giday = 1:length(dayfiles)
       
       switch filter
         case 1
-          k = find(p.solzen >90); % descending node (night)
+          k = find(p.iudef(4,:) == 68); % descending node (night)
           sDescriptor='_desc';
         case 2
-          k = find(p.solzen > 90 & p.landfrac == 0); % descending
+          k = find(p.iudef(4,:) == 68 & p.landfrac == 0); % descending
                                                      % node (night) ocean
           sDescriptor='_desc_ocean';
         case 3
-          k = find(p.solzen > 90 & p.landfrac == 1); % descending node
+          k = find(p.iudef(4,:) == 68 & p.landfrac == 1); % descending node
                                                         % (night), land
           sDescriptor='_desc_land';
         case 4
-          k = find(p.solzen < 90); % ascending node (day)
+          k = find(p.iudef(4,:) == 65); % ascending node (day)
           sDescriptor='_asc';
         case 5
-          k = find(p.solzen < 90 & p.landfrac == 0); % ascending node
+          k = find(p.iudef(4,:) == 65 & p.landfrac == 0); % ascending node
                                                          % (day), ocean
           sDescriptor='_asc_ocean';
         case 6
-          k = find(p.solzen < 90 & p.landfrac == 1); % ascending node
+          k = find(p.iudef(4,:) == 65 & p.landfrac == 1); % ascending node
                                                         % (day), land
           sDescriptor='_asc_land';
       end
