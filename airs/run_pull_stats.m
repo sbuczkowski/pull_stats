@@ -1,4 +1,4 @@
-function run_pull_stats(filter)
+function run_pull_stats(filter, wKLayers)
 set_process_dirs;
 addpath(genpath(rtp_sw_dir));
 
@@ -8,4 +8,8 @@ slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 year = 2002+slurmindex;
 disp(year)
 disp(filter)
-pull_stats_airibrad_rand(year,filter);
+if wKLayers == true
+    pull_stats_airibrad_rand_klayers(year,filter);
+else
+    pull_stats_airibrad_rand(year,filter);
+end

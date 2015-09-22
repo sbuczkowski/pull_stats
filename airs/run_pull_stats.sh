@@ -30,7 +30,7 @@ MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats($1, $2); exit"
     
 echo "Finished with srun of run_pull_stats"
 
