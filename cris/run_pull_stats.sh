@@ -15,27 +15,32 @@
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=normal
 #SBATCH --account=pi_strow
 #SBATCH -N1
-#SBATCH --mem-per-cpu=18000
+#SBATCH --mem=12000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=06:00:00
+#SBATCH --time=02:00:00
 # low res has data from 2012 to present: 4 years
-#SBATCH --array=0-3
+##SBATCH --array=0-3
+#SBATCH --requeue
+
+#SBATCH --mail-user=sbuczko1@umbc.edu
+#SBATCH --mail-type=BEGIN
+#SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-type=REQUEUE
+#SBATCH --mail-type=TIME_LIMIT_50
+
+#SBATCH -o /home/sbuczko1/logs/sbatch/run_cris_pull_stats-%A_%a.out
+#SBATCH -e /home/sbuczko1/logs/sbatch/run_cris_pull_stats-%A_%a.err
 
 # matlab options
 MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
-
-LOGDIR=~/logs/sbatch
-DT=$(date +"%Y%m%d-%H%M%S")
-
-JOBSTEP=0
-
 echo "Executing srun of run_pull_stats"
-srun  $MATLAB $MATOPT -r "addpath(genpath('~/git/rtp_prod2')); run_pull_stats($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); run_pull_stats($1); exit"
     
 echo "Finished with srun of run_pull_stats"
 

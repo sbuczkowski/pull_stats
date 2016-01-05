@@ -4,8 +4,8 @@
 #
 # currently this makes sense for random subset only
 
-for i={1..6}; do
-    sbatch run_pull_stats.sh $1
+for i in {1..6}; do
+    sbatch run_pull_stats.sh $i
 done
 
 
