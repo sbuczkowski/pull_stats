@@ -2,8 +2,11 @@ function pull_stats_random_template(year);
 
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
-addpath ~/git/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  % equal_area_spherical_bands
+addpath /asl/packages/rtp_prod2/util
+addpath /home/sergio/MATLABCODE/PLOTTER  %
+                                         % equal_area_spherical_bands
+                                         % (NEED TO MOVE THIS TO
+                                         % MORE CENTRAL LOCATION)
 
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
@@ -25,7 +28,7 @@ sRtpFileDir = '/asl/data/rtp_airibrad_v5';
 sRtpFileGlob = 'era_airibrad*_random.rtp';
 % type: random/clear/dcc/site
 asType = 'random';
-% output directory
+% output directory (***CHANGE BEFORE RUNNING***)
 sOutputDir = '/home/sbuczko1/testoutput/2015/airs/random/';
 %**********************************************************************
 
