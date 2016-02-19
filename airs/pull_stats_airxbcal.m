@@ -30,7 +30,7 @@ cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' 0.8 1.0 2.0 4.0 nan]; bit5=Aside[0=off,1=on]; bit6=Bside[0=off,1=on];' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
-basedir = ['/home/sbuczko1/testoutput/rtp_airxbcal_v5/' int2str(year) '/clear'];
+basedir = ['/asl/rtp/rtp_airxbcal_v5/' int2str(year) '/clear'];
 dayfiles = dir(fullfile(basedir, 'era_airxbcal_day*.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
