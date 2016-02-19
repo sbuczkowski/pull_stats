@@ -21,7 +21,7 @@
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 # airxbcal has data from 2002 to present: 14 years
 ##SBATCH --array=0-13
 

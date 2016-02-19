@@ -14,17 +14,25 @@ function pull_stats_airibrad_rand(year, filter);
 
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
-addpath ~/git/rtp_prod2/util
+addpath /asl/packages/rtp_prod2/util
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
+
+% record run start datetime in output stats file for tracking
+trace.RunDate = datetime('now','TimeZone','local','Format', ...
+                         'd-MMM-y HH:mm:ss Z');
+trace.Reason = 'rcal_wo_qa';
+trace.klayers = false;
+trace.droplayers = false;
+
 cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' 0.8 1.0 2.0 4.0 nan]; bit5=Aside[0=off,1=on]; bit6=Bside[0=off,1=on];' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
-basedir = fullfile('/asl/data/rtp_airibrad_v5/', ...
+basedir = fullfile('/asl/rtp/rtp_airibrad_v5/', ...
                    int2str(year), 'random');
-dayfiles = dir(fullfile(basedir, 'era_airibrad*_random.rtp'));
+dayfiles = dir(fullfile(basedir, 'era_airibrad_day*_random.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
@@ -33,7 +41,7 @@ latbins = equal_area_spherical_bands(nbins);
 nlatbins = length(latbins);
 
 iday = 1;
-% for giday = 1:50:length(dayfiles)
+%for giday = 1:10:length(dayfiles)
 for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
@@ -90,7 +98,7 @@ for giday = 1:length(dayfiles)
 %          kg = setdiff(1:n,k);
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
-         pp.rcalc(i,k) = NaN;
+% $$$          pp.rcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
@@ -106,23 +114,30 @@ for giday = 1:length(dayfiles)
          r  = p.robs1;
          rc = p.rcalc;
 
-% B(T) bias mean and std
-         bto = real(rad2bt(f,r));
-         btc = real(rad2bt(f,rc));
-         btobs(iday,ilat,:) = nanmean(bto,2);
-         btcal(iday,ilat,:) = nanmean(btc,2);
-         bias(iday,ilat,:)  = nanmean(bto-btc,2);
-         bias_std(iday,ilat,:) = nanstd(bto-btc,0,2);
+         robs(iday,ilat,:) = nanmean(r,2);
+         rcal(iday,ilat,:) = nanmean(rc,2);
+         rbias_std(iday,ilat,:) = nanstd(r-rc,0,2);
+         
          lat_mean(iday,ilat) = nanmean(p.rlat);
          lon_mean(iday,ilat) = nanmean(p.rlon);
          solzen_mean(iday,ilat) = nanmean(p.solzen);
          rtime_mean(iday,ilat)  = nanmean(p.rtime);
          count(iday,ilat,:) = sum(bincount,2)';
          stemp_mean(iday,ilat) = nanmean(p.stemp);
+         ptemp_mean(iday,ilat,:) = nanmean(p.ptemp,2);
+         gas1_mean(iday,ilat,:) = nanmean(p.gas_1,2);
+         gas3_mean(iday,ilat,:) = nanmean(p.gas_3,2);
+         spres_mean(iday,ilat) = nanmean(p.spres);
+         nlevs_mean(iday,ilat) = nanmean(p.nlevs);
+         iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
+% $$$          mmwater_mean(iday,ilat) = nanmean(binwater);
+         satzen_mean(iday,ilat) = nanmean(p.satzen);
+         plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
          end  % end loop over latitudes
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save ~/testoutput/rtp_airibrad'  int2str(year) ...
-            '_random' sDescriptor ' btobs btcal bias bias_std *_mean count latbins'];
+eval_str = ['save ~/testoutput/2015discontinuity/rtp_airibrad_era_rad_'  int2str(year) ...
+            '_random' sDescriptor ' robs rcal rbias_std *_mean ' ...
+                    'count latbins trace '];
 eval(eval_str);
