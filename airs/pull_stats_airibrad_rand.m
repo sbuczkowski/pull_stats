@@ -22,7 +22,7 @@ addpath /asl/matlib/rtptools  % mmwater_rtp.m
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
-trace.Reason = 'rcal_wo_qa';
+trace.Reason = 'production : pre-2016 STM';
 trace.klayers = false;
 trace.droplayers = false;
 
@@ -112,11 +112,14 @@ for giday = 1:length(dayfiles)
           
 % Radiance mean and std
          r  = p.robs1;
-         rc = p.rcalc;
-
+         cldy_calc = p.rcalc;
+         clr_calc = p.sarta_rclearcalc;
+         
          robs(iday,ilat,:) = nanmean(r,2);
-         rcal(iday,ilat,:) = nanmean(rc,2);
-         rbias_std(iday,ilat,:) = nanstd(r-rc,0,2);
+         rcldy(iday,ilat,:) = nanmean(cldy_calc,2);
+         rcldybias_std(iday,ilat,:) = nanstd(r-cldy_calc,0,2);
+         rclr(iday,ilat,:) = nanmean(clr_calc,2);
+         rclrbias_std(iday,ilat,:) = nanstd(r-clr_calc,0,2);
          
          lat_mean(iday,ilat) = nanmean(p.rlat);
          lon_mean(iday,ilat) = nanmean(p.rlon);
@@ -137,7 +140,7 @@ for giday = 1:length(dayfiles)
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save ~/testoutput/2015discontinuity/rtp_airibrad_era_rad_'  int2str(year) ...
-            '_random' sDescriptor ' robs rcal rbias_std *_mean ' ...
+eval_str = ['save /asl/data/stats/airs/rtp_airibrad_era_rad_'  int2str(year) ...
+            '_random' sDescriptor ' robs rcldy rclr r*bias_std *_mean ' ...
                     'count latbins trace '];
 eval(eval_str);
