@@ -6,6 +6,7 @@
 
 for i in {1..6}; do
     sbatch run_pull_stats.sh $i
+    sleep 15m
 done
 
 

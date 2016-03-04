@@ -41,7 +41,7 @@ fprintf(1, '*** Task run start %s\n', char(datetime('now')));
 
 klayers_exec = '/asl/packages/klayersV205/BinV201/klayers_airs_wetwater';
 
-basedir = fullfile('/asl/data/rtp_iasi1/clear', int2str(year));
+basedir = fullfile('/asl/rtp/rtp_iasi1/clear', int2str(year));
 
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
