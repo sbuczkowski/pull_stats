@@ -18,10 +18,10 @@
 #SBATCH --qos=medium
 #SBATCH --account=pi_strow
 #SBATCH -N1
-#SBATCH --mem=10000
+#SBATCH --mem=18000
 #SBATCH --cpus-per-task=1
 #SBATCH --time=8:00:00
-#SBATCH --array=0-8
+##SBATCH --array=0-8
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 ##SBATCH --mail-type=BEGIN

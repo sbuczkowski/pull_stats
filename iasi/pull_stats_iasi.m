@@ -38,6 +38,7 @@ fprintf(1, '*** Submit host: %s\tSubmit dir: %s\n', slurm_submit_host, ...
 [sID, sTempPath] = genscratchpath();
 fprintf(1, '*** Temp path: %s\tTemp sID: %s\n', sTempPath, sID);
 fprintf(1, '*** Task run start %s\n', char(datetime('now')));
+fprintf(1, '*** Running filter %d on year %d\n', filter, year);
 
 klayers_exec = '/asl/packages/klayersV205/BinV201/klayers_airs_wetwater';
 
