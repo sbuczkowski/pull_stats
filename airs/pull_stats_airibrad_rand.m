@@ -62,7 +62,7 @@ for giday = 1:length(dayfiles)
       
       %**************************************************
       % quick filter to exclude very cloudy scenes
-      temp_threshold = 5.0;  % threshold temp in Kelvin
+      temp_threshold = 10.0;  % threshold temp in Kelvin
       cchan = 2333;
       keep = find(p2.stemp - real(rad2bt(f(cchan), p2.robs1(cchan,:))) < temp_threshold);
       p = rtp_sub_prof(p2, keep);
@@ -148,7 +148,7 @@ for giday = 1:length(dayfiles)
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save /asl/data/stats/airs/rtp_airibrad_era_rad_5K_'  int2str(year) ...
+eval_str = ['save /asl/data/stats/airs/rtp_airibrad_era_rad_10K_'  int2str(year) ...
             '_random' sDescriptor ' robs rcldy rclr r*bias_std *_mean ' ...
                     'count latbins trace '];
 eval(eval_str);
