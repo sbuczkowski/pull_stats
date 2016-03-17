@@ -22,7 +22,7 @@ addpath /asl/matlib/rtptools  % mmwater_rtp.m
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
-trace.Reason = 'production : pre-2016 STM';
+trace.Reason = 'Cloudy scene reduction (5K threshold) : pre-2016 STM';
 trace.klayers = false;
 trace.droplayers = false;
 
@@ -46,19 +46,27 @@ for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes > 100000
-      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+      [h,ha,p2,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
       f = h.vchan;  % AIRS proper frequencies
-
+      
       % sanity check on p.robs1 as read in. (There have been
       % instances where this array is short on the spectral
       % dimension which fails in rad2bt. We trap for this here)
-      obs = size(p.robs1);
+      obs = size(p2.robs1);
       chans = size(f);
       if obs(1) ~= chans(1)
           fprintf(2, ['**>> ERROR: obs/vchan spectral channel ' ...
                       'mismatch in %s. Bypassing day.\n'], dayfiles(giday).name);
           continue;
       end
+      
+      %**************************************************
+      % quick filter to exclude very cloudy scenes
+      temp_threshold = 5.0;  % threshold temp in Kelvin
+      cchan = 2333;
+      keep = find(p2.stemp - real(rad2bt(f(cchan), p2.robs1(cchan,:))) < temp_threshold);
+      p = rtp_sub_prof(p2, keep);
+      %**************************************************
       
       switch filter
         case 1
@@ -140,7 +148,7 @@ for giday = 1:length(dayfiles)
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save /asl/data/stats/airs/rtp_airibrad_era_rad_'  int2str(year) ...
+eval_str = ['save /asl/data/stats/airs/rtp_airibrad_era_rad_5K_'  int2str(year) ...
             '_random' sDescriptor ' robs rcldy rclr r*bias_std *_mean ' ...
                     'count latbins trace '];
 eval(eval_str);
