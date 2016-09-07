@@ -18,15 +18,14 @@
 #SBATCH --qos=normal
 #SBATCH --account=pi_strow
 #SBATCH -N1
-#SBATCH --mem=12000
+#SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=02:00:00
+#SBATCH --time=04:00:00
 # low res has data from 2012 to present: 4 years
 ##SBATCH --array=0-3
 #SBATCH --requeue
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
-#SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE

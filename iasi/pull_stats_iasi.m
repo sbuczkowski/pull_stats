@@ -50,57 +50,9 @@ trace.RunDate = datetime('now','TimeZone','local','Format', ...
 trace.Content = 'radiance';
 trace.SlurmJobID = slurm_job_id;
 
-% Chris built the IASI rtp generation such that output rtp files go
-% into a YYYY/MM/DD/*.rtp_[12] tree. Each leaf branch constitutes
-% one day and has two rtp files, each containing about half the
-% IASI spectral space. For a given year, then, we'll grab a list of
-% MM directories to loop over. Within each of those, we will do the
-% same to grab a list of DD directories. I will leave this
-% abstracted out separately so that changes will be minimal if we
-% reorganize the rtp directories to conform to airs/cris YYYY/DDD
-% style
-
-monthdirs = dir(fullfile(basedir, '*'));
-i=1;  % day counter
-dayfiles=monthdirs(1);  % initialize structure
-
-% the results of dir derived this way include the directories '.'
-% and '..' in elements 1&2. interesting (valid) month and day
-% directories will start at index 3
-fprintf(1, '%s Starting file search...\n', char(datetime('now')));
-for imonth=3:numel(monthdirs)
-    mbasedir = fullfile(basedir, monthdirs(imonth).name);
-    daydirs = dir(fullfile(mbasedir, '*'));
-    for iday = 3:numel(daydirs)
-        dbasedir = fullfile(mbasedir, daydirs(iday).name);
-        sdayfiles = dir(fullfile(dbasedir, '*.rtp_*'));
-        % check for existence of daily files before using them for
-        % processing
-        switch numel(sdayfiles)
-          case 2
-            % two files as expected. continue
-            dayfiles(i) = sdayfiles(1);
-            % dayfiles is collecting files info from disparate
-            % paths so, capture full path info in the name field
-            dayfiles(i).name = fullfile(dbasedir, sdayfiles(1).name);
-            i=i+1;
-          case 1
-            % only one of two files. report and go to next day
-            fprintf(2, ['%s >>> ERROR: %s contains only one rtp file. ' ...
-                        'Moving on to next day.\n'], ...
-                    char(datetime('now')), dbasedir);
-            continue;
-          case 0
-            % no files found for day. report and go to next day
-            fprintf(2, ['%s >>> ERROR: %s contains no rtp files. Moving ' ...
-                        'on to next day.\n'], char(datetime('now')), ...
-                dbasedir);
-            continue;
-        end
-        
-    end
-end
-fprintf(1, '%s File search complete.\n', char(datetime('now')));
+basedir = ['/asl/rtp/rtp_iasi1/clear/' int2str(year)];
+dayfiles = dir(fullfile(basedir, 'iasi1_era_d*_clear.rtp_1'));
+fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
@@ -114,7 +66,7 @@ for giday = 1:length(dayfiles)
                                                       year, giday);
     if dayfiles(giday).bytes > 100000
         try
-            [h,ha,p,pa] = rtpread_12(dayfiles(giday).name);
+            [h,ha,p,pa] = rtpread_12(fullfile(basedir, dayfiles(giday).name));
         catch
             fprintf(2, '%s >>>> ERROR: File issue giday= %d with %s\n', ...
                     char(datetime('now')), giday, dayfiles(giday).name);
@@ -220,6 +172,7 @@ for giday = 1:length(dayfiles)
                 robs(iday,ilat,:,z) = nanmean(r,2);
                 rcal(iday,ilat,:,z) = nanmean(rc,2);
                 rbias_std(iday,ilat,:,z) = nanstd(r-rc,0,2);
+
                 lat_mean(iday,ilat,z) = nanmean(p2.rlat);
                 lon_mean(iday,ilat,z) = nanmean(p2.rlon);
                 solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
@@ -227,20 +180,14 @@ for giday = 1:length(dayfiles)
                 count(iday,ilat,z) = sum(bincount(1,:))';
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-                ptemp_mean(iday,ilat,:,z) = nanmean(p.ptemp,2);
-                gas1_mean(iday,ilat,:,z) = nanmean(p.gas_1,2);
-                gas2_mean(iday,ilat,:,z) = nanmean(p.gas_2,2);                
-                gas3_mean(iday,ilat,:,z) = nanmean(p.gas_3,2);
-                gas4_mean(iday,ilat,:,z) = nanmean(p.gas_4,2);
-                gas5_mean(iday,ilat,:,z) = nanmean(p.gas_5,2);
-                gas6_mean(iday,ilat,:,z) = nanmean(p.gas_6,2);
-                gas9_mean(iday,ilat,:,z) = nanmean(p.gas_9,2);
-                gas12_mean(iday,ilat,:,z) = nanmean(p.gas_12,2);                    
-                spres_mean(iday,ilat,z) = nanmean(p.spres);
-                nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
-                satzen_mean(iday,ilat,z) = nanmean(p.satzen);
-                plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
-                scanang_mean(iday,ilat,z) = nanmean(p.scanang);
+                ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
+                gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
+                gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
+                spres_mean(iday,ilat,z) = nanmean(p2.spres);
+                nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
+                satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
+                plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
+
             end  % ifov (z)
         end  % end loop over ilat
             
@@ -248,7 +195,7 @@ for giday = 1:length(dayfiles)
     end % if a.bytes > 1000000
 end  % giday
 
-savefile = sprintf('/asl/data/stats/iasi/rtp_iasi_%d_rad_clear_%s', year, sDescriptor);
+savefile = sprintf('/asl/rtp_lustre/data/stats/iasi/rtp_iasi_%d_rad_clear_%s', year, sDescriptor);
 save(savefile, 'robs','rcal', 'rbias_std', '*_mean','count', 'trace')
 
 fprintf(1, '*** Task end time: %s\n', char(datetime('now')));

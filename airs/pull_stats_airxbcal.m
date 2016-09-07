@@ -22,7 +22,7 @@ addpath /home/sergio/MATLABCODE/PLOTTER  %
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
-trace.Reason = '2015 discontinuity analysis';
+trace.Reason = 'Normal pull_stats runs';
 trace.klayers = false;
 trace.droplayers = false;
 
@@ -129,6 +129,6 @@ for giday = 1:length(dayfiles)
       iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save ~/testoutput/2015discontinuity/rtp_airxbcal_era_rad_'  int2str(year) ...
+eval_str = ['save /asl/rtp_lustre/data/stats/airs/rtp_airxbcal_era_rad_'  int2str(year) ...
             '_clear' sDescriptor ' robs rcal rbias_std *_mean count trace '];
 eval(eval_str);

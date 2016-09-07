@@ -22,7 +22,7 @@ addpath /asl/matlib/rtptools  % mmwater_rtp.m
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
-trace.Reason = 'Cloudy scene reduction (5K threshold) : pre-2016 STM';
+trace.Reason = '';
 trace.klayers = false;
 trace.droplayers = false;
 
@@ -32,7 +32,7 @@ cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
 
 basedir = fullfile('/asl/rtp/rtp_airibrad_v5/', ...
                    int2str(year), 'random');
-dayfiles = dir(fullfile(basedir, 'era_airibrad_day*_random.rtp'));
+dayfiles = dir(fullfile(basedir, 'nomodel_airibrad_day*_random.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
@@ -46,13 +46,13 @@ for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes > 100000
-      [h,ha,p2,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
       f = h.vchan;  % AIRS proper frequencies
       
       % sanity check on p.robs1 as read in. (There have been
       % instances where this array is short on the spectral
       % dimension which fails in rad2bt. We trap for this here)
-      obs = size(p2.robs1);
+      obs = size(p.robs1);
       chans = size(f);
       if obs(1) ~= chans(1)
           fprintf(2, ['**>> ERROR: obs/vchan spectral channel ' ...
@@ -60,13 +60,13 @@ for giday = 1:length(dayfiles)
           continue;
       end
       
-      %**************************************************
-      % quick filter to exclude very cloudy scenes
-      temp_threshold = 10.0;  % threshold temp in Kelvin
-      cchan = 2333;
-      keep = find(p2.stemp - real(rad2bt(f(cchan), p2.robs1(cchan,:))) < temp_threshold);
-      p = rtp_sub_prof(p2, keep);
-      %**************************************************
+% $$$       %**************************************************
+% $$$       % quick filter to exclude very cloudy scenes
+% $$$       temp_threshold = 10.0;  % threshold temp in Kelvin
+% $$$       cchan = 2333;
+% $$$       keep = find(p2.stemp - real(rad2bt(f(cchan), p2.robs1(cchan,:))) < temp_threshold);
+% $$$       p = rtp_sub_prof(p2, keep);
+% $$$       %**************************************************
       
       switch filter
         case 1
@@ -120,35 +120,37 @@ for giday = 1:length(dayfiles)
           
 % Radiance mean and std
          r  = p.robs1;
-         cldy_calc = p.rcalc;
-         clr_calc = p.sarta_rclearcalc;
+% $$$          cldy_calc = p.rcalc;
+% $$$          clr_calc = p.sarta_rclearcalc;
          
          robs(iday,ilat,:) = nanmean(r,2);
-         rcldy(iday,ilat,:) = nanmean(cldy_calc,2);
-         rcldybias_std(iday,ilat,:) = nanstd(r-cldy_calc,0,2);
-         rclr(iday,ilat,:) = nanmean(clr_calc,2);
-         rclrbias_std(iday,ilat,:) = nanstd(r-clr_calc,0,2);
+% $$$          rcldy(iday,ilat,:) = nanmean(cldy_calc,2);
+% $$$          rcldybias_std(iday,ilat,:) = nanstd(r-cldy_calc,0,2);
+% $$$          rclr(iday,ilat,:) = nanmean(clr_calc,2);
+% $$$          rclrbias_std(iday,ilat,:) = nanstd(r-clr_calc,0,2);
          
          lat_mean(iday,ilat) = nanmean(p.rlat);
          lon_mean(iday,ilat) = nanmean(p.rlon);
          solzen_mean(iday,ilat) = nanmean(p.solzen);
          rtime_mean(iday,ilat)  = nanmean(p.rtime);
          count(iday,ilat,:) = sum(bincount,2)';
-         stemp_mean(iday,ilat) = nanmean(p.stemp);
-         ptemp_mean(iday,ilat,:) = nanmean(p.ptemp,2);
-         gas1_mean(iday,ilat,:) = nanmean(p.gas_1,2);
-         gas3_mean(iday,ilat,:) = nanmean(p.gas_3,2);
-         spres_mean(iday,ilat) = nanmean(p.spres);
-         nlevs_mean(iday,ilat) = nanmean(p.nlevs);
+% $$$          stemp_mean(iday,ilat) = nanmean(p.stemp);
+% $$$          ptemp_mean(iday,ilat,:) = nanmean(p.ptemp,2);
+% $$$          gas1_mean(iday,ilat,:) = nanmean(p.gas_1,2);
+% $$$          gas3_mean(iday,ilat,:) = nanmean(p.gas_3,2);
+% $$$          spres_mean(iday,ilat) = nanmean(p.spres);
+% $$$          nlevs_mean(iday,ilat) = nanmean(p.nlevs);
          iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
 % $$$          mmwater_mean(iday,ilat) = nanmean(binwater);
          satzen_mean(iday,ilat) = nanmean(p.satzen);
-         plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
+% $$$          plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
          end  % end loop over latitudes
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save /asl/data/stats/airs/rtp_airibrad_era_rad_10K_'  int2str(year) ...
-            '_random' sDescriptor ' robs rcldy rclr r*bias_std *_mean ' ...
-                    'count latbins trace '];
+outfile = ['/asl/data/stats/airs/rtp_airibrad_nomodel_rad_' ...
+           int2str(year) '_random' sDescriptor];
+% $$$ eval_str = ['save ' outfile [' robs rcl* *_mean count latbins ' ...
+% $$$                     'trace'];
+eval_str = ['save ' outfile ' robs *_mean count latbins trace'];
 eval(eval_str);
