@@ -1,4 +1,4 @@
-function pull_stats_cris(year, filter);
+function pull_stats_uwcris(year, filter);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -17,19 +17,20 @@ function pull_stats_cris(year, filter);
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/ccast/motmsc/utils/
-addpath ~/git/rtp_prod2/util
+addpath /home/sbuczko1/git/rtp_prod2/util
+addpath /home/sbuczko1/git/rtp_prod2/cris/scripts  % cris_lowres_chans
 addpath /asl/rtp_prod/cris/unapod
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
-addpath /home/sbuczko1/git/rtp_prod2/cris/scripts  % cris_lowres_chans
 
 % Get proper frequencies for these data
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_lowres_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
 
-basedir = fullfile('/asl/rtp/rtp_cris_ccast_lowres/random', ...
+% $$$ basedir = fullfile('/asl/rtp/rtp_cris_UW_lowres/clear_daily', ...
+basedir = fullfile('/home/sbuczko1/testoutput/rtp_cris_UW_lowres/clear_daily', ...
                    int2str(year));
-dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_random.rtp'));
+dayfiles = dir(fullfile(basedir, 'uwcris_*_clear.rtp'));
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
@@ -93,22 +94,16 @@ for giday = 1:length(dayfiles)
               % Loop over obs in day
               % Radiance mean and std
               
-              r  = p2.robs1;
+              r  = p2.robs1;  % robs1 is already Hamming apodized
+                              % in rtp files
               rc = p2.rcalc;
               
-              % Convert r to rham
-              r = box_to_ham(r);  % assumes r in freq order!!  Needed
-                                  % for lowres
-% $$$               bto = real(rad2bt(f,r));
-% $$$               btc = real(rad2bt(f,rc));
-% $$$               btobs(iday,ilat,:,z) = nanmean(bto,2);
-% $$$               btcal(iday,ilat,:,z) = nanmean(btc,2);
-% $$$               bias(iday,ilat,:,z)  = nanmean(bto-btc,2);
-% $$$               bias_std(iday,ilat,:,z) = nanstd(bto-btc,0,2);
+% $$$               % Convert r to rham
+% $$$               r = box_to_ham(r);  % assumes r in freq order!!  Needed
+% $$$                                   % for lowres
               robs(iday,ilat,:,z) = nanmean(r,2);
               rcal(iday,ilat,:,z) = nanmean(rc,2);
-              rbias_std(iday, ilat,:) = nanstd(r-rc,0,2);
-              
+              bias_std(iday,ilat,:,z) = nanstd(r-rc,0,2);
               lat_mean(iday,ilat,z) = nanmean(p2.rlat);
               lon_mean(iday,ilat,z) = nanmean(p2.rlon);
               solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
@@ -118,19 +113,24 @@ for giday = 1:length(dayfiles)
               iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
               ptemp_mean(iday,ilat,:,z) = nanmean(p.ptemp,2);
               gas1_mean(iday,ilat,:,z) = nanmean(p.gas_1,2);
+              gas2_mean(iday,ilat,:,z) = nanmean(p.gas_2,2);                
               gas3_mean(iday,ilat,:,z) = nanmean(p.gas_3,2);
+              gas4_mean(iday,ilat,:,z) = nanmean(p.gas_4,2);
+              gas5_mean(iday,ilat,:,z) = nanmean(p.gas_5,2);
+              gas6_mean(iday,ilat,:,z) = nanmean(p.gas_6,2);
+              gas9_mean(iday,ilat,:,z) = nanmean(p.gas_9,2);
+              gas12_mean(iday,ilat,:,z) = nanmean(p.gas_12,2);                    
               spres_mean(iday,ilat,z) = nanmean(p.spres);
               nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
               satzen_mean(iday,ilat,z) = nanmean(p.satzen);
               plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
-% $$$               scanang_mean(iday,ilat,z) = nanmean(p.scanang);
+              scanang_mean(iday,ilat,z) = nanmean(p.scanang);
           end  % ifov (z)
       end  % end loop over ilat
           
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save /home/sbuczko1/WorkingFiles/data/stats/cris/rtp_cris_lowres_era_rad_'  int2str(year) ...
-            '_random' sDescriptor ' robs rcal rbias_std *_mean count '];
-% $$$             '_random' sDescriptor '  btobs btcal bias bias_std *_mean count '];
+eval_str = ['save /home/sbuczko1/testoutput/pull_stats/UW-cris/rtp_uwcris_lowres_rad_'  int2str(year) ...
+            '_clear' sDescriptor ' robs rcal bias_std *_mean count '];
 eval(eval_str);

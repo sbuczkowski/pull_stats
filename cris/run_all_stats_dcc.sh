@@ -4,9 +4,8 @@
 #
 # currently this makes sense for random subset only
 
-for i in {1..6}; do
-    sbatch run_pull_stats.sh $i
-    sleep 3m
+for i in {1,4}; do
+    sbatch run_pull_stats_dcc.sh $i
 done
 
 

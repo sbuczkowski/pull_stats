@@ -61,8 +61,38 @@ for giday = 1:ndayfiles
     fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
     a = dir(fullfile(basedir,dayfiles(giday).name));
     if a.bytes > 100000
-        [h,ha,p,pa] = rtpread(fullfile(basedir, ...
+        [h,ha,pp,pa] = rtpread(fullfile(basedir, ...
                                        dayfiles(giday).name));
+
+        % subset for basic type and reduce load going in to klayers
+        switch filter
+          case 1
+            k = find(pp.iudef(4,:) == 68); % descending node (night)
+            sDescriptor='_desc';
+          case 2
+            k = find(pp.iudef(4,:) == 68 & pp.landfrac == 0); % descending
+                                                            % node (night) ocean
+            sDescriptor='_desc_ocean';
+          case 3
+            k = find(pp.iudef(4,:) == 68 & pp.landfrac == 1); % descending node
+                                                            % (night), land
+            sDescriptor='_desc_land';
+          case 4
+            k = find(pp.iudef(4,:) == 65); % ascending node (day)
+            sDescriptor='_asc';
+          case 5
+            k = find(pp.iudef(4,:) == 65 & pp.landfrac == 0); % ascending node
+                                                            % (day), ocean
+            sDescriptor='_asc_ocean';
+          case 6
+            k = find(pp.iudef(4,:) == 65 & pp.landfrac == 1); % ascending node
+                                                            % (day), land
+            sDescriptor='_asc_land';
+        end
+
+        p = rtp_sub_prof(pp, k);
+        clear pp;
+        
         % save some sarta output from rtp generation as following
         % klayers run will wipe it out
         sarta_rclearcalc = p.sarta_rclearcalc;
@@ -84,61 +114,38 @@ for giday = 1:ndayfiles
         % run klayers on the rtp data (Sergio is asking for this to
         % convert levels to layers for his processing?)
         fprintf(1, '>>> running klayers... ');
-        fn_rtp1 = fullfile(basedir,dayfiles(giday).name);
+        fn_rtp1 = fullfile(sTempPath, ['airs_' sID '_1.rtp']);
+        rtpwrite(fn_rtp1, h,ha,p,pa);
+        clear p;
         fn_rtp2 = fullfile(sTempPath, ['airs_' sID '_2.rtp']);
         klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
                        ' > ' sTempPath '/kout.txt'];
         unix(klayers_run);
-        [h,ha,p,pa] = rtpread(fn_rtp2);
+        [h,ha,pp,pa] = rtpread(fn_rtp2);
         fprintf(1, 'Done\n');
 
-        p.rcalc = sarta_rclearcalc;
-        p.rcldycalc = sarta_rcldycalc;
+        % restore relevant sarta output from original rtp structs
+        pp.rcalc = sarta_rclearcalc;
+        pp.rcldycalc = sarta_rcldycalc;
         clear sarta_rclearcalc sarta_rcldycalc;
         
         % get column water
-        mmwater = mmwater_rtp(h, p);
-
-        switch filter
-          case 1
-            k = find(p.iudef(4,:) == 68); % descending node (night)
-            sDescriptor='_desc';
-          case 2
-            k = find(p.iudef(4,:) == 68 & p.landfrac == 0); % descending
-                                                            % node (night) ocean
-            sDescriptor='_desc_ocean';
-          case 3
-            k = find(p.iudef(4,:) == 68 & p.landfrac == 1); % descending node
-                                                            % (night), land
-            sDescriptor='_desc_land';
-          case 4
-            k = find(p.iudef(4,:) == 65); % ascending node (day)
-            sDescriptor='_asc';
-          case 5
-            k = find(p.iudef(4,:) == 65 & p.landfrac == 0); % ascending node
-                                                            % (day), ocean
-            sDescriptor='_asc_ocean';
-          case 6
-            k = find(p.iudef(4,:) == 65 & p.landfrac == 1); % ascending node
-                                                            % (day), land
-            sDescriptor='_asc_land';
-        end
-
-        pp = rtp_sub_prof(p, k);
-        mmwater = mmwater(k);
-
+        mmwater = mmwater_rtp(h, pp);
+        
         % Initialize counts
-        [nedt,ab,ical] = calnum_to_data(p.calflag,cstr);
-        n = length(p.rlat);
+        n = length(pp.rlat);
         count_all = ones(2378,n);
+
+        % Find bad channels and clear them from spectra
+        [nedt,ab,ical] = calnum_to_data(pp.calflag,cstr);
         for i=1:2378
-            % Find bad channels
-            k = find( p.robs1(i,:) == -9999 | ical(i,:) ~= 0 | nedt(i,:) > 1);
+            k = find( pp.robs1(i,:) == -9999 | ical(i,:) ~= 0 | nedt(i,:) > 1);
             %          % These are the good channels
             %          kg = setdiff(1:n,k);
             % NaN's for bad channels
             pp.robs1(i,k) = NaN;
             pp.rcalc(i,k) = NaN;
+            pp.rcldycalc(i,k) = NaN;
             count_all(i,k) = 0;
         end
 
@@ -151,7 +158,7 @@ for giday = 1:ndayfiles
             bincount = count_all(:,inbin); 
             binwater = mmwater(inbin);
             
-            % Radiance mean and std
+            % Collect output stats for the bin
             r  = p.robs1;
             rc = p.rcalc;
             rcldycalc = p.rcldycalc;
@@ -168,7 +175,13 @@ for giday = 1:ndayfiles
             stemp_mean(iday,ilat) = nanmean(p.stemp);
             ptemp_mean(iday,ilat,:) = nanmean(p.ptemp,2);
             gas1_mean(iday,ilat,:) = nanmean(p.gas_1,2);
+            gas2_mean(iday,ilat,:) = nanmean(p.gas_2,2);
             gas3_mean(iday,ilat,:) = nanmean(p.gas_3,2);
+            gas4_mean(iday,ilat,:) = nanmean(p.gas_4,2);
+            gas5_mean(iday,ilat,:) = nanmean(p.gas_5,2);
+            gas6_mean(iday,ilat,:) = nanmean(p.gas_6,2);
+            gas9_mean(iday,ilat,:) = nanmean(p.gas_9,2);
+            gas12_mean(iday,ilat,:) = nanmean(p.gas_12,2);
             spres_mean(iday,ilat) = nanmean(p.spres);
             nlevs_mean(iday,ilat) = nanmean(p.nlevs);
             iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
@@ -177,16 +190,18 @@ for giday = 1:ndayfiles
             mmwater_mean(iday,ilat) = nanmean(binwater);
 
             % average and store cloud variables
-            ind1 = find((p.ctype == 201 & p.cfrac > 0 & p.cngwat > 0 ) |  ...
-                        (p.ctype2 == 201 & p.cfrac2 > 0 & p.cngwat > 0));
+            ind1 = find((p.ctype == 201 & p.cfrac > 0 & p.cngwat > 0 & p.cprtop > 0) |  ...
+                        (p.ctype2 == 201 & p.cfrac2 > 0 & p.cngwat2 ...
+                         > 0 & p.cprtop2 > 0));
             cfrac_mean(iday,ilat) = nanmean(p.cfrac(ind1));
             cprtop_mean(iday,ilat) = nanmean(p.cprtop(ind1));
             cprbot_mean(iday,ilat) = nanmean(p.cprbot(ind1));
             cngwat_mean(iday,ilat) = nanmean(p.cngwat(ind1));
             cpsize_mean(iday,ilat) = nanmean(p.cpsize(ind1));
 
-            ind2 = find((p.ctype == 101 & p.cfrac > 0 & p.cngwat > 0 ) |  ...
-                        (p.ctype2 == 101 & p.cfrac2 > 0 & p.cngwat > 0));
+            ind2 = find((p.ctype == 101 & p.cfrac > 0 & p.cngwat > 0 & p.cprtop > 0) |  ...
+                        (p.ctype2 == 101 & p.cfrac2 > 0 & p.cngwat2 ...
+                         > 0 & p.cprtop2 > 0));
             cfrac2_mean(iday,ilat) = nanmean(p.cfrac2(ind2));
             cprtop2_mean(iday,ilat) = nanmean(p.cprtop2(ind2));
             cprbot2_mean(iday,ilat) = nanmean(p.cprbot2(ind2));
@@ -199,6 +214,6 @@ for giday = 1:ndayfiles
             iday = iday + 1
     end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save ~/WorkingFiles/data/stats/rtp_airibrad'  int2str(year) ...
+eval_str = ['save ~/WorkingFiles/data/stats/airs/rtp_airibrad_era_rad_'  int2str(year) ...
             '_random_kl' sDescriptor ' robs rcldy rclr bias_std *_mean count latbins'];
 eval(eval_str);

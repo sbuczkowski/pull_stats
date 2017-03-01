@@ -1,4 +1,4 @@
-function pull_stats_airibrad_rand(year, filter);
+function pull_stats_airxbcal_klayers_lb(year, filter);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -14,25 +14,21 @@ function pull_stats_airibrad_rand(year, filter);
 
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
-addpath /asl/packages/rtp_prod2/util
+addpath ~/git/rtp_prod2/util
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
-
-% record run start datetime in output stats file for tracking
-trace.RunDate = datetime('now','TimeZone','local','Format', ...
-                         'd-MMM-y HH:mm:ss Z');
-trace.Reason = '';
-trace.klayers = false;
-trace.droplayers = false;
-
+klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
+                'klayers_airs_wetwater'];
 cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' 0.8 1.0 2.0 4.0 nan]; bit5=Aside[0=off,1=on]; bit6=Bside[0=off,1=on];' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
-basedir = fullfile('/asl/rtp/rtp_airibrad_v5/', ...
-                   int2str(year), 'random');
-dayfiles = dir(fullfile(basedir, 'era_airibrad_day*_random.rtp'));
+[sID, sTempPath] = genscratchpath();
+
+basedir = fullfile('/home/sbuczko1/testoutput/2015/cris', ...
+                   int2str(year), 'clear');
+dayfiles = dir(fullfile(basedir, 'era_airxbcal_day*_clear.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
@@ -41,14 +37,14 @@ latbins = equal_area_spherical_bands(nbins);
 nlatbins = length(latbins);
 
 iday = 1;
-%for giday = 1:10:length(dayfiles)
+% for giday = 1:50:length(dayfiles)
 for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes > 100000
       [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
       f = h.vchan;  % AIRS proper frequencies
-      
+
       % sanity check on p.robs1 as read in. (There have been
       % instances where this array is short on the spectral
       % dimension which fails in rad2bt. We trap for this here)
@@ -60,14 +56,20 @@ for giday = 1:length(dayfiles)
           continue;
       end
       
-% $$$       %**************************************************
-% $$$       % quick filter to exclude very cloudy scenes
-% $$$       temp_threshold = 10.0;  % threshold temp in Kelvin
-% $$$       cchan = 2333;
-% $$$       keep = find(p2.stemp - real(rad2bt(f(cchan), p2.robs1(cchan,:))) < temp_threshold);
-% $$$       p = rtp_sub_prof(p2, keep);
-% $$$       %**************************************************
-      
+      % run klayers on the rtp data (Sergio is asking for this to
+      % convert levels to layers for his processing?)
+      fprintf(1, '>>> running klayers... ');
+      fn_rtp1 = fullfile(basedir,dayfiles(giday).name);
+      fn_rtp2 = fullfile(sTempPath, ['airs_' sID '_2.rtp']);
+      klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
+                     ' > ' sTempPath '/kout.txt'];
+      unix(klayers_run);
+      [h,ha,p,pa] = rtpread(fn_rtp2);
+      fprintf(1, 'Done\n');
+
+      % get column water
+      mmwater = mmwater_rtp(h, p);
+
       switch filter
         case 1
           k = find(p.iudef(4,:) == 68); % descending node (night)
@@ -94,6 +96,7 @@ for giday = 1:length(dayfiles)
       end
 
       pp = rtp_sub_prof(p, k);
+      mmwater = mmwater(k);
 
       % Initialize counts
       [nedt,ab,ical] = calnum_to_data(p.calflag,cstr);
@@ -117,18 +120,19 @@ for giday = 1:length(dayfiles)
                      latbins(ilat+1));
           p = rtp_sub_prof(pp,inbin);
           bincount = count_all(:,inbin); 
+          binwater = mmwater(inbin);
           
 % Radiance mean and std
          r  = p.robs1;
-         cldy_calc = p.rcalc;
-         clr_calc = p.sarta_rclearcalc;
-         
-         robs(iday,ilat,:) = nanmean(r,2);
-         rcldy(iday,ilat,:) = nanmean(cldy_calc,2);
-         rcldybias_std(iday,ilat,:) = nanstd(r-cldy_calc,0,2);
-         rclr(iday,ilat,:) = nanmean(clr_calc,2);
-         rclrbias_std(iday,ilat,:) = nanstd(r-clr_calc,0,2);
-         
+         rc = p.rcalc;
+
+% B(T) bias mean and std
+         bto = real(rad2bt(f,r));
+         btc = real(rad2bt(f,rc));
+         btobs(iday,ilat,:) = nanmean(bto,2);
+         btcal(iday,ilat,:) = nanmean(btc,2);
+         bias(iday,ilat,:)  = nanmean(bto-btc,2);
+         bias_std(iday,ilat,:) = nanstd(bto-btc,0,2);
          lat_mean(iday,ilat) = nanmean(p.rlat);
          lon_mean(iday,ilat) = nanmean(p.rlon);
          solzen_mean(iday,ilat) = nanmean(p.solzen);
@@ -141,18 +145,13 @@ for giday = 1:length(dayfiles)
          spres_mean(iday,ilat) = nanmean(p.spres);
          nlevs_mean(iday,ilat) = nanmean(p.nlevs);
          iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
-% $$$          mmwater_mean(iday,ilat) = nanmean(binwater);
+         mmwater_mean(iday,ilat) = nanmean(binwater);
          satzen_mean(iday,ilat) = nanmean(p.satzen);
          plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
          end  % end loop over latitudes
          iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-% $$$ startdir='/asl/rtp_lustre';
-startdir='/home/sbuczko1/WorkingFiles/';
-outfile = [startdir 'data/stats/airs/rtp_airibrad_era_rad_' ...
-           int2str(year) '_random' sDescriptor];
-eval_str = ['save ' outfile [' robs rcl* *_mean count latbins ' ...
-                    'trace']];
-% $$$ eval_str = ['save ' outfile ' robs *_mean count latbins trace'];
+eval_str = ['save /asl/data/rtprod_airs_test_slb/2015/clear/rtp_airxbcal'  int2str(year) ...
+            '_clear' sDescriptor ' btobs btcal bias bias_std *_mean count latbins'];
 eval(eval_str);

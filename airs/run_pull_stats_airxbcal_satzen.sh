@@ -9,38 +9,28 @@
 # 4 = ascending (day, land & ocean
 # 5 = asc, ocean
 # 6 = asc, land
+# 7 = tropical, ocean
 
 # sbatch options
-#SBATCH --job-name=RUN_IASI_PULL_STATS_CLR
+#SBATCH --job-name=RUN_AIRS_PULL_STATS
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
 #SBATCH --qos=medium
 #SBATCH --account=pi_strow
 #SBATCH -N1
-#SBATCH --mem=18000
-#SBATCH --cpus-per-task=1
-#SBATCH --time=8:00:00
-#SBATCH --array=0-9
-
-#SBATCH --mail-user=sbuczko1@umbc.edu
-##SBATCH --mail-type=BEGIN
-##SBATCH --mail-type=END
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-type=REQUEUE
-#SBATCH --mail-type=TIME_LIMIT_50
-
-#SBATCH -o /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.out
-#SBATCH -e /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.err
+#SBATCH --mem-per-cpu=18000
+#SBATCH --cpus-per-task 1
+#SBATCH --time=02:00:00
+# airxbcal has data from 2002 to present: 14 years
+#SBATCH --array=13
 
 # matlab options
 MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
-JOBSTEP=0
-
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/iasi'); run_pull_stats($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats_airxbcal_satzen($1, $2); exit"
     
 echo "Finished with srun of run_pull_stats"
 

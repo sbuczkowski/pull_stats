@@ -1,4 +1,4 @@
-function pull_stats_iasi(year, filter)
+function pull_stats_iasi_dcc(year, filter)
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -42,7 +42,7 @@ fprintf(1, '*** Running filter %d on year %d\n', filter, year);
 
 klayers_exec = '/asl/packages/klayersV205/BinV201/klayers_airs_wetwater';
 
-basedir = fullfile('/asl/rtp/rtp_iasi1/clear', int2str(year));
+basedir = fullfile('/asl/rtp/rtp_iasi1/dcc', int2str(year));
 
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
@@ -50,8 +50,8 @@ trace.RunDate = datetime('now','TimeZone','local','Format', ...
 trace.Content = 'radiance';
 trace.SlurmJobID = slurm_job_id;
 
-basedir = ['/asl/rtp/rtp_iasi1/clear/' int2str(year)];
-dayfiles = dir(fullfile(basedir, 'iasi1_era_d*_clear.rtp_1'));
+basedir = ['/asl/rtp/rtp_iasi1/dcc/' int2str(year)];
+dayfiles = dir(fullfile(basedir, 'iasi1_era_d*_dcc.rtp_1'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
@@ -60,7 +60,6 @@ latbins = equal_area_spherical_bands(nbins);
 nlatbins = length(latbins);
 
 iday = 1;
-
 for giday = 1:length(dayfiles)
     fprintf(1, '%s >>> year = %d  :: giday = %d\n', char(datetime('now')), ...
                                                       year, giday);
@@ -72,6 +71,16 @@ for giday = 1:length(dayfiles)
                     char(datetime('now')), giday, dayfiles(giday).name);
             continue;
         end
+
+        % check for proper model levels and move to next day if the
+        % wrong model is mixed in
+        [levs, obs] = size(p.ptemp);
+        if levs ~= 60  % not era in the rtp file
+            fprintf(2, '%s >>>> ERROR: model issue giday= %d with %s\n', ...
+                    char(datetime('now')), giday, dayfiles(giday).name);
+            continue;
+        end
+        
         f = h.vchan;
 
         ptype = h.ptype; % grab input ptype for traceability
@@ -100,46 +109,6 @@ for giday = 1:length(dayfiles)
 
         pp = rtp_sub_prof(p, k);
 
-        % run klayers on the rtp data (Sergio is asking for this to
-        % convert levels to layers for his processing?)
-        % *** Actually, Chris is keeping klayers results in his rtp
-        % output files so, I can just use the values already there ***
-% $$$ 
-% $$$         % first remove rcalc field and save it for later restore
-% $$$         rcalc = p.rcalc;
-% $$$         p = rmfield(p, 'rcalc');
-% $$$         
-% $$$         h.ptype = 0; % force ptype to LEVPRO so klayers will run (even if it
-% $$$                      % was run in rtp generation)
-% $$$ 
-% $$$         fprintf(1, '>>> running klayers... ');
-% $$$         fn_rtp1 = fullfile(sTempPath, ['iasi_' sID '_1.rtp']);
-% $$$         outfiles = rtpwrite_12(fn_rtp1, h,ha,p,pa)
-% $$$         % run klayers on first half of spectrum
-% $$$         fprintf(1, '>>> Running klayers on first half of spectrum.\n');
-% $$$         fbase = ['iasi_' sID '_2.rtp'];
-% $$$         fn_rtp2 = fullfile(sTempPath, [fbase '_1']);
-% $$$         klayers_run = [klayers_exec ' fin=' outfiles{1} ' fout=' fn_rtp2 ...
-% $$$                        ' > ' sTempPath '/kout.txt'];
-% $$$         unix(klayers_run);
-% $$$         fprintf(1, '>>>>> Done\n');
-% $$$         % run klayers on second half of spectrum
-% $$$         fprintf(1, '>>> Running klayers on second half of spectrum.\n');
-% $$$         fn_rtp2 = fullfile(sTempPath, [fbase '_2']);
-% $$$         klayers_run = [klayers_exec ' fin=' outfiles{2} ' fout=' fn_rtp2 ...
-% $$$                        ' > ' sTempPath '/kout.txt'];
-% $$$         unix(klayers_run);
-% $$$         fprintf(1, '>>>>> Done\n');
-% $$$         fprintf(1, '>>> Reading in klayers output.\n');
-% $$$         [h,ha,p,pa] = rtpread_12(fullfile(sTempPath, [fbase '_1']));
-% $$$         % restore rcalc
-% $$$         p.rcalc = rcalc;
-% $$$         clear rcalc;
-% $$$
-% $$$         ptype = 1; % reset ptype to LAYPRO since we've re-run klayers
-% $$$         
-% $$$         fprintf(1, 'Done\n');
-
         % initialize counts and look for bad channels (what should
         % the iasi bad channel test look like?)
         [nchans, nobs] = size(pp.robs1);
@@ -155,6 +124,11 @@ for giday = 1:length(dayfiles)
             % subset based on latitude bin
             inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
                          latbins(ilat+1));
+            if isempty(inbin)
+                % no obs in latbin. Onward to next
+                continue;
+            end
+            
             p = rtp_sub_prof(pp,inbin);
 
             for z = 1:4  % loop over FOVs to further sub-select
@@ -180,13 +154,13 @@ for giday = 1:length(dayfiles)
                 count(iday,ilat,z) = sum(bincount(1,:))';
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-                ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
-                gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
-                gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
+% $$$                 ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
+% $$$                 gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
+% $$$                 gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
                 spres_mean(iday,ilat,z) = nanmean(p2.spres);
                 nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
                 satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
-                plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
+% $$$                 plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
 
             end  % ifov (z)
         end  % end loop over ilat
@@ -195,7 +169,7 @@ for giday = 1:length(dayfiles)
     end % if a.bytes > 1000000
 end  % giday
 
-savefile = sprintf('/home/sbuczko1/WorkingFiles/data/stats/iasi/rtp_iasi_era_%d_rad_clear_%s', year, sDescriptor);
+savefile = sprintf('/home/sbuczko1/WorkingFiles/data/stats/iasi/rtp_iasi_era_%d_rad_dcc_%s', year, sDescriptor);
 save(savefile, 'robs','rcal', 'rbias_std', '*_mean','count', 'trace')
 
 fprintf(1, '*** Task end time: %s\n', char(datetime('now')));

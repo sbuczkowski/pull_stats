@@ -191,7 +191,7 @@ for giday = 1:length(dayfiles)
     end % if a.bytes > 1000000
 end  % giday
 
-savefile = sprintf('/asl/data/stats/iasi/rtp_iasi_%d_rad_random_%s', year, sDescriptor);
+savefile = sprintf('/home/sbuczko1/WorkingFiles/data/stats/iasi/rtp_iasi_era_%d_rad_random_%s', year, sDescriptor);
 save(savefile, 'robs', 'rcal', 'rbias_std', '*_mean','count', 'trace')
 
 fprintf(1, '*** Task end time: %s\n', char(datetime('now')));

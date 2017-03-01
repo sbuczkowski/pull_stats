@@ -22,7 +22,7 @@
 #SBATCH --cpus-per-task 1
 #SBATCH --time=20:00:00
 #SBATCH --requeue
-##SBATCH --array=0-9
+#SBATCH --array=0-9
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 ##SBATCH --mail-type=BEGIN

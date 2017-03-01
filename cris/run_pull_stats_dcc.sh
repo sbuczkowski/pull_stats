@@ -11,36 +11,35 @@
 # 6 = asc, land
 
 # sbatch options
-#SBATCH --job-name=RUN_IASI_PULL_STATS_CLR
+#SBATCH --job-name=RUN_LR_PULL_STATS_DCC
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=normal
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
-#SBATCH --cpus-per-task=1
-#SBATCH --time=8:00:00
-#SBATCH --array=0-9
+#SBATCH --cpus-per-task 1
+#SBATCH --time=04:00:00
+# low res has data from 2012 to present: 4 years
+#SBATCH --array=0-4
+#SBATCH --requeue
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
-##SBATCH --mail-type=BEGIN
-##SBATCH --mail-type=END
+#SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=TIME_LIMIT_50
 
-#SBATCH -o /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.out
-#SBATCH -e /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.err
+#SBATCH -o /home/sbuczko1/logs/sbatch/run_cris_pull_stats_dcc-%A_%a.out
+#SBATCH -e /home/sbuczko1/logs/sbatch/run_cris_pull_stats_dcc-%A_%a.err
 
 # matlab options
 MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
-JOBSTEP=0
-
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/iasi'); run_pull_stats($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); run_pull_stats_dcc($1); exit"
     
 echo "Finished with srun of run_pull_stats"
 

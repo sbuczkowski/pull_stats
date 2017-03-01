@@ -5,8 +5,7 @@
 # currently this makes sense for random subset only
 
 for i in {1..6}; do
-    sbatch run_pull_stats.sh $i
-    sleep 3m
+    sbatch --comment="MERRA first of month timeseries test" --array=0-14 run_pull_stats_airibrad_merraTseries.sh $i
 done
 
 

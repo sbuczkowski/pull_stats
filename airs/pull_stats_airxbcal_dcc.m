@@ -1,4 +1,4 @@
-function pull_stats_airxbcal(year, filter);
+function pull_stats_airxbcal_dcc(year, filter);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -19,19 +19,15 @@ addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/rtp_prod2/util
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
-% record run start datetime in output stats file for tracking
-trace.RunDate = datetime('now','TimeZone','local','Format', ...
-                         'd-MMM-y HH:mm:ss Z');
-trace.Reason = 'Normal pull_stats runs';
-trace.klayers = false;
-trace.droplayers = false;
-
 cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' 0.8 1.0 2.0 4.0 nan]; bit5=Aside[0=off,1=on]; bit6=Bside[0=off,1=on];' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
-basedir = ['/asl/rtp/rtp_airxbcal_v5/' int2str(year) '/clear'];
-dayfiles = dir(fullfile(basedir, 'era_airxbcal_day*_clear.rtp'));
+trace.RunDate = datetime('now','TimeZone','local','Format', ...
+                         'd-MMM-y HH:mm:ss Z');
+
+basedir = ['/asl/data/rtp_airxbcal_v5/' int2str(year) '/dcc'];
+dayfiles = dir(fullfile(basedir, 'era_airxbcal_day*_dcc.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
@@ -40,7 +36,7 @@ latbins = equal_area_spherical_bands(nbins);
 nlatbins = length(latbins);
 
 iday = 1;
-%for giday = 1:10:length(dayfiles)
+% for giday = 1:50:length(dayfiles)
 for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
@@ -91,6 +87,7 @@ for giday = 1:length(dayfiles)
 %          kg = setdiff(1:n,k);
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
+         pp.rcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
@@ -109,7 +106,7 @@ for giday = 1:length(dayfiles)
            robs(iday,ilat,:) = nanmean(r,2);
            rcal(iday,ilat,:) = nanmean(rc,2);
            rbias_std(iday,ilat,:) = nanstd(r-rc,0,2);
-           
+
            lat_mean(iday,ilat) = nanmean(p.rlat);
            lon_mean(iday,ilat) = nanmean(p.rlon);
            solzen_mean(iday,ilat) = nanmean(p.solzen);
@@ -132,5 +129,5 @@ end  % giday
 startdir='/asl/data/stats/airs';
 % $$$ startdir='/home/sbuczko1/WorkingFiles';
 eval_str = ['save ' startdir '/rtp_airxbcal_era_rad_'  int2str(year) ...
-            '_clear' sDescriptor ' robs rcal rbias_std *_mean count trace '];
+            '_dcc' sDescriptor ' robs rcal rbias_std *_mean count trace '];
 eval(eval_str);

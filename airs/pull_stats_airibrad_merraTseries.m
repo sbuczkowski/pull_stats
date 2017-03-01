@@ -1,4 +1,4 @@
-function pull_stats_airibrad_rand(year, filter);
+function pull_stats_airibrad_merraTseries(year, filter);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -12,17 +12,17 @@ function pull_stats_airibrad_rand(year, filter);
 % and chunking
 %**************************************************
 
+%year = 2014;
+
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/rtp_prod2/util
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
-addpath /asl/matlib/rtptools  % mmwater_rtp.m
-
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
-trace.Reason = '';
+trace.Reason = 'MERRA First of month timeseris test with AIRIBRAD';
 trace.klayers = false;
 trace.droplayers = false;
 
@@ -30,9 +30,20 @@ cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' 0.8 1.0 2.0 4.0 nan]; bit5=Aside[0=off,1=on]; bit6=Bside[0=off,1=on];' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
-basedir = fullfile('/asl/rtp/rtp_airibrad_v5/', ...
-                   int2str(year), 'random');
-dayfiles = dir(fullfile(basedir, 'era_airibrad_day*_random.rtp'));
+
+basedir = ['/asl/rtp/rtp_airibrad_v5/' int2str(year) '/random'];
+dayfiles = {};
+for month = 1:12 
+    for dom = 1:1   % collect stats for first three days of month
+       C = {sprintf('%s %s %s', int2str(year), int2str(month), ...
+                           int2str(dom))};
+       t = datetime(C, 'InputFormat', 'yyyy MM dd');
+       t.Format = 'DDD';
+       st = char(t);
+       dayfiles(end+1) = {fullfile(basedir, ...
+                               sprintf('merra_airibrad_day%03s_random.rtp',st))};
+    end
+end
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
@@ -41,83 +52,73 @@ latbins = equal_area_spherical_bands(nbins);
 nlatbins = length(latbins);
 
 iday = 1;
+missingday = zeros(1,12);
 %for giday = 1:10:length(dayfiles)
 for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
-   a = dir(fullfile(basedir,dayfiles(giday).name));
+   a = dir(dayfiles{giday});
+   if length(a) == 0
+       missingday(giday) = 1; 
+       continue;
+   end
+   a.bytes;
    if a.bytes > 100000
-      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+      [h,ha,p,pa] = rtpread(dayfiles{giday});
       f = h.vchan;  % AIRS proper frequencies
-      
-      % sanity check on p.robs1 as read in. (There have been
-      % instances where this array is short on the spectral
-      % dimension which fails in rad2bt. We trap for this here)
-      obs = size(p.robs1);
-      chans = size(f);
-      if obs(1) ~= chans(1)
-          fprintf(2, ['**>> ERROR: obs/vchan spectral channel ' ...
-                      'mismatch in %s. Bypassing day.\n'], dayfiles(giday).name);
-          continue;
-      end
-      
-% $$$       %**************************************************
-% $$$       % quick filter to exclude very cloudy scenes
-% $$$       temp_threshold = 10.0;  % threshold temp in Kelvin
-% $$$       cchan = 2333;
-% $$$       keep = find(p2.stemp - real(rad2bt(f(cchan), p2.robs1(cchan,:))) < temp_threshold);
-% $$$       p = rtp_sub_prof(p2, keep);
-% $$$       %**************************************************
       
       switch filter
         case 1
           k = find(p.iudef(4,:) == 68); % descending node (night)
           sDescriptor='_desc';
         case 2
-          k = find(p.iudef(4,:) == 68 & p.landfrac == 0); % descending
-                                                     % node (night) ocean
+          k = find(p.iudef(4,:) == 68 & p.landfrac == 0); % descending node
+                                                         % (night), ocean
           sDescriptor='_desc_ocean';
         case 3
           k = find(p.iudef(4,:) == 68 & p.landfrac == 1); % descending node
                                                         % (night), land
           sDescriptor='_desc_land';
         case 4
-          k = find(p.iudef(4,:) == 65); % ascending node (day)
+          k = find(p.iudef(4,:) == 65); % ascending node (night)
           sDescriptor='_asc';
         case 5
           k = find(p.iudef(4,:) == 65 & p.landfrac == 0); % ascending node
-                                                         % (day), ocean
+                                                         % (night), ocean
           sDescriptor='_asc_ocean';
         case 6
           k = find(p.iudef(4,:) == 65 & p.landfrac == 1); % ascending node
-                                                        % (day), land
+                                                        % (night), land
           sDescriptor='_asc_land';
+        case 7
+          k = find(abs(p.rlat) < 30 & p.landfrac == 0); % tropical
+                                                        % ocean
+          sDescriptor='_tropocean';
       end
 
       pp = rtp_sub_prof(p, k);
 
-      % Initialize counts
-      [nedt,ab,ical] = calnum_to_data(p.calflag,cstr);
-      n = length(p.rlat);
+      % Look for bad channels and initialize counts
+      [nedt,ab,ical] = calnum_to_data(pp.calflag,cstr);
+      n = length(pp.rlat);
       count_all = ones(2378,n);
       for i=1:2378
          % Find bad channels
-         k = find( p.robs1(i,:) == -9999 | ical(i,:) ~= 0 | nedt(i,:) > 1);
+         k = find( pp.robs1(i,:) == -9999 | ical(i,:) ~= 0 | nedt(i,:) > 1);
 %          % These are the good channels
 %          kg = setdiff(1:n,k);
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
-         pp.rcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
       % Loop over latitude bins
       for ilat = 1:nlatbins-1
-          % subset based on latitude bin
-          inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                     latbins(ilat+1));
-          p = rtp_sub_prof(pp,inbin);
-          bincount = count_all(:,inbin); 
-          
+           % subset based on latitude bin
+           inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
+                        latbins(ilat+1));
+           p = rtp_sub_prof(pp,inbin);
+           bincount = count_all(:,inbin);
+           
 % Radiance mean and std
          r  = p.robs1;
          cldy_calc = p.rcalc;
@@ -144,15 +145,14 @@ for giday = 1:length(dayfiles)
 % $$$          mmwater_mean(iday,ilat) = nanmean(binwater);
          satzen_mean(iday,ilat) = nanmean(p.satzen);
          plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
-         end  % end loop over latitudes
-         iday = iday + 1
+       end  % end loop over latitudes
+
+      iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-% $$$ startdir='/asl/rtp_lustre';
-startdir='/home/sbuczko1/WorkingFiles/';
-outfile = [startdir 'data/stats/airs/rtp_airibrad_era_rad_' ...
-           int2str(year) '_random' sDescriptor];
-eval_str = ['save ' outfile [' robs rcl* *_mean count latbins ' ...
-                    'trace']];
-% $$$ eval_str = ['save ' outfile ' robs *_mean count latbins trace'];
+% $$$ startdir='/asl/data/stats/airs';
+startdir='/home/sbuczko1/WorkingFiles/MERRATimeSeriesTest';
+eval_str = ['save ' startdir '/rtp_airibrad_ts_merra_rad_'  int2str(year) ...
+            '_random' sDescriptor [' robs rcl* *_mean ' ...
+                    'missingday dayfiles latbins count trace ']];
 eval(eval_str);
