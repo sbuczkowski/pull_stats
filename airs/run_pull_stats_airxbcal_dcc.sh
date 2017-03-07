@@ -23,7 +23,10 @@
 #SBATCH --cpus-per-task 1
 #SBATCH --time=02:00:00
 # airxbcal has data from 2002 to present: 14 years
-##SBATCH --array=13
+#SBATCH --array=0-14
+
+#SBATCH -o /home/sbuczko1/logs/sbatch/run_airs_pull_stats-%A_%a.out
+#SBATCH -e /home/sbuczko1/logs/sbatch/run_airs_pull_stats-%A_%a.err
 
 # matlab options
 MATLAB=/usr/cluster/matlab/current/bin/matlab
