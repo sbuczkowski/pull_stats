@@ -16,19 +16,19 @@
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=normal
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=09:00:00
+#SBATCH --time=03:00:00
 # airxbcal has data from 2002 to present: 14 years
 #SBATCH --requeue
-#SBATCH --array=14
+#SBATCH --array=0-19
 
-##SBATCH --mail-user=sbuczko1@umbc.edu
-#SBATCH --mail-user=14136879102@tmomail.net
-#SBATCH --mail-type=END
+#SBATCH --mail-user=sbuczko1@umbc.edu
+##SBATCH --mail-type=BEGIN
+##SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=TIME_LIMIT_50
@@ -41,7 +41,7 @@ MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats_airxbcal($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats_airxbcal_site($1); exit"
     
 echo "Finished with srun of run_pull_stats"
 

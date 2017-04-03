@@ -8,10 +8,58 @@ function pull_stats_airxbcal_site(year,siteID);
 %*******************************************************************************
 
 % $$$ addpath /asl/matlib/h4tools
-% $$$ addpath /asl/rtp_prod/airs/utils
+addpath /asl/rtp_prod/airs/utils
+addpath /asl/packages/rtp_prod2/util
 % $$$ addpath /asl/packages/rtp_prod2/util
 % $$$ addpath /home/sergio/MATLABCODE/PLOTTER  %
 % $$$                                          % equal_area_spherical_bands
+
+% Fixed sites used by AIRS or CRIS or IASI (max no of sites = 99)
+SiteLatLon=[ ...
+    27.12   26.10; %  1 = Egypt 1                                                  
+   -24.50  137.00; %  2 = Simpson Desert                                           
+   -75.10  123.40; %  3 = Dome Concordia, 3200 m elevation                         
+     1.50  290.50; %  4 = Mitu, Columbia / Brazil tropical forest                  
+     3.50   14.50; %  5 = Boumba, S.E. Cameroon                                    
+    38.50  244.30; %  6 = Railroad Valley, NV                                      
+    36.60  262.50; %  7 = ARM-SGP (southern great plains), OK                      
+    -2.06  147.42; %  8 = MAN, Manus, Papua New Guinea, GRUAN 6 m.                 
+    -0.50  166.60; %  9 = ARM-TWP (tropical western pacific) Nauru, Micronesia     
+    90.00    0.00; % 10 = north pole                                               
+   -90.00    0.00; % 11 = south pole                                               
+    61.15   73.37; % 12 = Siberian tundra (Surgut)                                 
+    23.90  100.50; % 13 = Hunnan rain forest                                       
+    71.32  203.34; % 14 = BAR Barrow, Alaska/ARM-NSA GRUAN 8m (north slope)        
+    70.32  203.33; % 15 = Atqusuk, Alaska                                          
+   -12.42  130.89; % 16 = Darwin, Australia                                        
+    36.75  100.33; % 17 = Lake Qinhai                                              
+    40.17   94.33; % 18 = Dunhuang, Gobi desert                                    
+   -15.88  290.67; % 19 = Lake Titicaca                                            
+    39.10  239.96]; % 20 = Lake Tahoe, CA
+
+SiteName= {'Egypt 1';
+           'Simpson Desert';
+           'Dome Concordia, 3200 m elevation';                        
+           'Mitu, Columbia / Brazil tropical forest';                 
+           'Boumba, S.E. Cameroon';                                   
+           'Railroad Valley, NV';                                     
+           'ARM-SGP (southern great plains), OK';                     
+           'MAN, Manus, Papua New Guinea, GRUAN 6 m.';                
+           'ARM-TWP (tropical western pacific) Nauru, Micronesia';    
+           'north pole';                                              
+           'south pole';                                              
+           'Siberian tundra (Surgut)';                                
+           'Hunnan rain forest';                                      
+           'BAR Barrow, Alaska/ARM-NSA GRUAN 8m (north slope)';       
+           'Atqusuk, Alaska';                                         
+           'Darwin, Australia';                                       
+           'Lake Qinhai';                                             
+           'Dunhuang, Gobi desert';                                   
+           'Lake Titicaca';                                           
+           'Lake Tahoe, CA'};                                          
+
+Site.latlon = SiteLatLon(siteID);
+Site.name = SiteName(siteID);
 
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
@@ -133,11 +181,16 @@ for giday = 1:length(dayfiles)
 end  % giday
 
 % $$$ outfileDir='/asl/data/stats/airs';
-outfileDir='/home/sbuczko1/WorkingFiles/data/stats/airs';
+outfileBase='/home/sbuczko1/WorkingFiles/data/stats/airs';
+outfileDir = fullfile(outfileBase, int2str(siteID));
+if exist(outfileDir) == 0
+    mkdir(outfileDir)
+end
 
 outfileName = sprintf('airxbcal_site-%d_%d_era_rad_stats', siteID, year);
 outfilePath = fullfile(outfileDir, outfileName)
-eval_str = sprintf('save %s accum_*', outfilePath);
+
+eval_str = sprintf('save %s Site trace accum_*', outfilePath);
 eval(eval_str);
 end
 
