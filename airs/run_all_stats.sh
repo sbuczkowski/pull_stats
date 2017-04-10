@@ -6,7 +6,7 @@
 wKLayers=$1
 
 for i in {1..6}; do
-    sbatch run_pull_stats.sh $i $wKLayers
+    sbatch run_pull_stats.sh $i
 done
 
 

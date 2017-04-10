@@ -21,12 +21,11 @@
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=08:00:00
+#SBATCH --time=10:00:00
 # airxbcal has data from 2002 to present: 14 years
-#SBATCH --array=14
+#SBATCH --array=0-14
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
-#SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
@@ -40,7 +39,7 @@ MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_airs_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats($1, $2); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats($1); exit"
     
 echo "Finished with srun of run_airs_pull_stats"
 
