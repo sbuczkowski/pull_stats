@@ -5,7 +5,7 @@
 # currently this makes sense for random subset only
 
 for i in {1..6}; do
-    sbatch --comment="airxbcal stats for filter $i" run_pull_stats_airxbcal.sh $i 
+    sbatch run_pull_stats_random.sh $i
 done
 
 

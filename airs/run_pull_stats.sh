@@ -23,7 +23,7 @@
 #SBATCH --cpus-per-task 1
 #SBATCH --time=10:00:00
 # airxbcal has data from 2002 to present: 14 years
-#SBATCH --array=0-14
+#SBATCH --array=15
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 #SBATCH --mail-type=END

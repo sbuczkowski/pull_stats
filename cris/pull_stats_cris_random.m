@@ -1,4 +1,4 @@
-function pull_stats_cris(year, filter);
+function pull_stats_cris_random(year, filter);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -22,15 +22,21 @@ addpath /asl/rtp_prod/cris/unapod
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
 addpath /home/sbuczko1/git/rtp_prod2/cris/scripts  % cris_lowres_chans
+addpath /asl/matlib/rtptools  % mmwater_rtp.m
+
+[sID, sTempPath] = genscratchpath();
+
+klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
+                'klayers_airs_wetwater'];
 
 % Get proper frequencies for these data
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_lowres_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
 
-% $$$ basedir = fullfile('/asl/rtp/rtp_cris_ccast_lowres/random', ...
-% $$$                    int2str(year));
-basedir = fullfile('/home/sbuczko1/WorkingFiles/rtp_cris_ccast_lowres/random', ...
+basedir = fullfile('/asl/rtp/rtp_cris_ccast_lowres/random', ...
                    int2str(year));
+% $$$ basedir = fullfile('/home/sbuczko1/WorkingFiles/rtp_cris_ccast_lowres/random', ...
+% $$$                    int2str(year));
 dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_random.rtp'));
 
 % calculate latitude bins
@@ -73,6 +79,44 @@ for giday = 1:length(dayfiles)
 
       pp = rtp_sub_prof(p, k);
 
+      % run klayers on the rtp data to convert levels -> layers
+      % save calcs as the re-run of klayers wipes them out
+      sarta_rclearcalc = pp.sarta_rclearcalc;
+      rcalc = pp.rcalc;
+      fprintf(1, '>>> running klayers... ');
+      fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
+      rtpwrite(fn_rtp1, h,ha,pp,pa);
+      clear pp;
+      fn_rtp2 = fullfile(sTempPath, ['cris_' sID '_2.rtp']);
+      klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
+                     ' > ' sTempPath '/kout.txt'];
+      unix(klayers_run);
+      fprintf(1, 'Done\n');
+
+      % Read klayers output into local rtp variables
+      [h,ha,pp,pa] = rtpread(fn_rtp2);
+      % restore sarta_rclearcalc
+      pp.sarta_rclearcalc = sarta_rclearcalc;
+      pp.rcalc = rcalc;
+      clear sarta_rclearcalc rcalc;
+      
+      % get column water
+      mmwater = mmwater_rtp(h, pp);
+
+      % Check for obs with layer profiles that go lower than
+      % topography. Need to check nlevs and NaN out any layers
+      % at or below this level
+
+      % ** Any layers-sensitive variables added in averaging code below must
+      % ** be checked here first.
+      for i=1:length(pp.nlevs)
+          badlayers = pp.nlevs(i) : 101;
+          pp.plevs(badlayers, i) = NaN;
+          pp.gas_1(badlayers, i) = NaN;
+          pp.gas_3(badlayers, i) = NaN;
+          pp.ptemp(badlayers, i) = NaN;
+      end
+
       % initialize counts and look for bad channels (what should
       % the iasi bad channel test look like?)
       [nchans, nobs] = size(pp.robs1);
@@ -91,7 +135,7 @@ for giday = 1:length(dayfiles)
               p2 = rtp_sub_prof(p, ifov);
               
               bincount = count_all(:,inbin,z); 
-              
+              binwater = mmwater(inbin);        
               % Loop over obs in day
               % Radiance mean and std
               
@@ -99,9 +143,11 @@ for giday = 1:length(dayfiles)
               rc = p2.sarta_rclearcalc;
               rcld = p2.rcalc;
               
+              % leave as sinc for test
               % Convert r to rham
               r = box_to_ham(r);  % assumes r in freq order!!  Needed
                                   % for lowres
+              
 % $$$               bto = real(rad2bt(f,r));
 % $$$               btc = real(rad2bt(f,rc));
 % $$$               btobs(iday,ilat,:,z) = nanmean(bto,2);
@@ -128,6 +174,7 @@ for giday = 1:length(dayfiles)
               nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
               satzen_mean(iday,ilat,z) = nanmean(p.satzen);
               plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
+              mmwater_mean(iday,ilat) = nanmean(binwater);
 % $$$               scanang_mean(iday,ilat,z) = nanmean(p.scanang);
           end  % ifov (z)
       end  % end loop over ilat

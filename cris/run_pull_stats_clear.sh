@@ -9,10 +9,9 @@
 # 4 = ascending (day, land & ocean
 # 5 = asc, ocean
 # 6 = asc, land
-# 7 = tropical, ocean
 
 # sbatch options
-#SBATCH --job-name=RUN_AIRS_PULL_STATS
+#SBATCH --job-name=RUN_LR_PULL_STATS
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
@@ -21,27 +20,26 @@
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=09:00:00
-# airxbcal has data from 2002 to present: 14 years
+#SBATCH --time=07:00:00
+# low res has data from 2012 to present: 4 years
+#SBATCH --array=0
 #SBATCH --requeue
-#SBATCH --array=0-14
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
-##SBATCH --mail-user=14136879102@tmomail.net
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=TIME_LIMIT_50
 
-#SBATCH -o /home/sbuczko1/logs/sbatch/run_airs_pull_stats-%A_%a.out
-#SBATCH -e /home/sbuczko1/logs/sbatch/run_airs_pull_stats-%A_%a.err
+#SBATCH -o /home/sbuczko1/logs/sbatch/run_cris_pull_stats-%A_%a.out
+#SBATCH -e /home/sbuczko1/logs/sbatch/run_cris_pull_stats-%A_%a.err
 
 # matlab options
 MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/airs/'); run_pull_stats_airxbcal($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); run_pull_stats_clear($1); exit"
     
 echo "Finished with srun of run_pull_stats"
 

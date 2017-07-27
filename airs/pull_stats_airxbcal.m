@@ -124,6 +124,26 @@ for giday = 1:length(dayfiles)
           
           % get column water
           mmwater = mmwater_rtp(h, pp);
+
+          % Check for obs with layer profiles that go lower than
+          % topography. Need to check nlevs and NaN out any layers
+          % at or below this level
+
+          % ** Any layers-sensitive variables added in averaging code below must
+          % ** be checked here first.
+          for i=1:length(pp.nlevs)
+              badlayers = pp.nlevs(i) : 101;
+              pp.plevs(badlayers, i) = NaN;
+              pp.palts(badlayers, i) = NaN;
+              pp.gas_1(badlayers, i) = NaN;
+              pp.gas_2(badlayers, i) = NaN;
+              pp.gas_3(badlayers, i) = NaN;
+              pp.gas_4(badlayers, i) = NaN;
+              pp.gas_5(badlayers, i) = NaN;
+              pp.gas_6(badlayers, i) = NaN;
+              pp.gas_12(badlayers, i) = NaN;          
+              pp.ptemp(badlayers, i) = NaN;
+          end
       end
       
       % Look for bad channels and initialize counts
@@ -181,7 +201,7 @@ for giday = 1:length(dayfiles)
    end % if a.bytes > 1000000
 end  % giday
 % $$$ startdir='/asl/data/stats/airs';
-startdir='/home/sbuczko1/WorkingFiles';
+startdir='/home/sbuczko1/WorkingFiles/data/stats/airs';
 eval_str = ['save ' startdir '/rtp_airxbcal_era_rad_kl_'  int2str(year) ...
             '_clear' sDescriptor ' robs rcal rbias_std *_mean count trace '];
 eval(eval_str);
