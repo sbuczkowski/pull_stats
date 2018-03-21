@@ -63,6 +63,11 @@ if bCheckConfig & isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
 
+llat = 60;
+if bCheckConfig & isfield(cfg, 'latlimit')
+    llat = cfg.latlimit;
+end
+
 basedir = fullfile(rtpdir, 'random_fs', int2str(year));
 dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_random_fs.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
@@ -116,7 +121,7 @@ for giday = 1:length(dayfiles)
 
       % limit obs collected to lat +-60
       p = pp;
-      k = find(abs(p.rlat) < 60);
+      k = find(abs(p.rlat) <= llat);
       pp = rtp_sub_prof(p, k);
       
       % run klayers on the rtp data to convert levels -> layers
@@ -220,7 +225,7 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_random_fs_scanang_%s', ...
-           int2str(year), sDescriptor));
+outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%d_%s_random_fs_scanang_%s', ...
+           llat, int2str(year), sDescriptor));
 eval_str = ['save ' outfile ' robs rcal rcldcal *_std *_mean count '];
 eval(eval_str);

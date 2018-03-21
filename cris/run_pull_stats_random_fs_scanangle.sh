@@ -22,7 +22,7 @@
 #SBATCH --cpus-per-task 1
 #SBATCH --time=03:00:00
 # low res has data from 2012 to present: 4 years
-#SBATCH --array=1-4
+#SBATCH --array=4
 #SBATCH --requeue
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
