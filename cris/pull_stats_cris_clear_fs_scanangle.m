@@ -63,29 +63,24 @@ if bCheckConfig & isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
 
-basedir = fullfile(rtpdir, 'random_fs', int2str(year));
-dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_random_fs.rtp'));
+basedir = fullfile(rtpdir, 'clear', int2str(year));
+dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_clear.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % Get proper frequencies for these data
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_lowres_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
 
-% calculate latitude bins
-% $$$ nbins=20; % gives 2N+1 element array of lat bin boundaries
-% $$$ latbins = equal_area_spherical_bands(nbins);
-% $$$ nlatbins = length(latbins);
-
 nfors = 30;  % number of FORs cross-track
 nfovs = 9;   % number of FOVs per FOR
 
 iday = 1;
-% for giday = 1:50:length(dayfiles)
 for giday = 1:length(dayfiles)
-   fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
-   a = dir(fullfile(basedir,dayfiles(giday).name));
-   if a.bytes > 100000
-      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+% $$$ for giday = 18:20
+    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
+    a = dir(fullfile(basedir,dayfiles(giday).name));
+    if a.bytes > 100000
+        [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
 
       switch filter
         case 1
@@ -121,8 +116,7 @@ for giday = 1:length(dayfiles)
       
       % run klayers on the rtp data to convert levels -> layers
       % save calcs as the re-run of klayers wipes them out
-      rclr = pp.rclr;
-      rcld = pp.rcld;
+      rclr = pp.rcalc;
       fprintf(1, '>>> running klayers... ');
       fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
       rtpwrite(fn_rtp1, h,ha,pp,pa);
@@ -136,9 +130,8 @@ for giday = 1:length(dayfiles)
       % Read klayers output into local rtp variables
       [h,ha,pp,pa] = rtpread(fn_rtp2);
       % restore sarta_rclearcalc
-      pp.rclr = rclr;
-      pp.rcld = rcld;
-      clear rclr rcld
+      pp.rcalc = rclr;
+      clear rclr
       
       % get column water
       mmwater = mmwater_rtp(h, pp);
@@ -178,25 +171,16 @@ for giday = 1:length(dayfiles)
               % Radiance mean and std
               
               r  = p2.robs1;
-              rc = p2.rclr
-              rcld = p2.rcld
+              rc = p2.rcalc;
               
               % leave as sinc for test
               % Convert r to rham
               r = box_to_ham(r);  % assumes r in freq order!!  Needed
                                   % for lowres
               
-% $$$               bto = real(rad2bt(f,r));
-% $$$               btc = real(rad2bt(f,rc));
-% $$$               btobs(iday,ifor,:,z) = nanmean(bto,2);
-% $$$               btcal(iday,ifor,:,z) = nanmean(btc,2);
-% $$$               bias(iday,ifor,:,z)  = nanmean(bto-btc,2);
-% $$$               bias_std(iday,ifor,:,z) = nanstd(bto-btc,0,2);
               robs(iday,ifor,:,z) = nanmean(r,2);
               rcal(iday,ifor,:,z) = nanmean(rc,2);
-              rcldcal(iday,ifor,:,z) = nanmean(rcld,2);
               rbias_std(iday, ifor,:) = nanstd(r-rc,0,2);
-              rcbias_std(iday, ifor,:) = nanstd(r-rcld,0,2);
               
               lat_mean(iday,ifor,z) = nanmean(p2.rlat);
               lon_mean(iday,ifor,z) = nanmean(p2.rlon);
@@ -220,7 +204,7 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_random_fs_scanang_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_clear_scanang_%s', ...
            int2str(year), sDescriptor));
-eval_str = ['save ' outfile ' robs rcal rcldcal *_std *_mean count '];
+eval_str = ['save ' outfile ' robs rcal *_std *_mean count '];
 eval(eval_str);
