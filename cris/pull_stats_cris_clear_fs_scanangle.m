@@ -1,4 +1,4 @@
-function pull_stats_cris_random(year, filter, cfg);
+function pull_stats_cris_clear_fs_scanangle(year, filter, cfg);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -72,9 +72,12 @@ fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 f = cris_vchan(2, userLW, userMW, userSW);
 
 % calculate latitude bins
-nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+% $$$ nbins=20; % gives 2N+1 element array of lat bin boundaries
+% $$$ latbins = equal_area_spherical_bands(nbins);
+% $$$ nlatbins = length(latbins);
+
+nfors = 30;  % number of FORs cross-track
+nfovs = 9;   % number of FOVs per FOR
 
 iday = 1;
 % for giday = 1:50:length(dayfiles)
@@ -111,6 +114,11 @@ for giday = 1:length(dayfiles)
 
       pp = rtp_sub_prof(p, k);
 
+      % limit obs collected to lat +-60
+      p = pp;
+      k = find(abs(p.rlat) < 60);
+      pp = rtp_sub_prof(p, k);
+      
       % run klayers on the rtp data to convert levels -> layers
       % save calcs as the re-run of klayers wipes them out
       rclr = pp.rclr;
@@ -127,10 +135,10 @@ for giday = 1:length(dayfiles)
 
       % Read klayers output into local rtp variables
       [h,ha,pp,pa] = rtpread(fn_rtp2);
-      % restore rclr
+      % restore sarta_rclearcalc
       pp.rclr = rclr;
       pp.rcld = rcld;
-      clear rclr rcld;
+      clear rclr rcld
       
       % get column water
       mmwater = mmwater_rtp(h, pp);
@@ -152,14 +160,12 @@ for giday = 1:length(dayfiles)
       % initialize counts and look for bad channels (what should
       % the iasi bad channel test look like?)
       [nchans, nobs] = size(pp.robs1);
-      nfovs = 9;
       count_all = int8(ones(nchans, nobs, nfovs));
       
       % loop over latitude bins
-      for ilat = 1:nlatbins-1
+      for ifor = 1:nfors
           % subset based on latitude bin
-          inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                       latbins(ilat+1));
+          inbin = find(pp.xtrack == ifor);
           p = rtp_sub_prof(pp,inbin);
           
           for z = 1:9  % loop over FOVs to further sub-select
@@ -172,8 +178,8 @@ for giday = 1:length(dayfiles)
               % Radiance mean and std
               
               r  = p2.robs1;
-              rc = p2.rclr;
-              rcld = p2.rcld;
+              rc = p2.rclr
+              rcld = p2.rcld
               
               % leave as sinc for test
               % Convert r to rham
@@ -182,39 +188,39 @@ for giday = 1:length(dayfiles)
               
 % $$$               bto = real(rad2bt(f,r));
 % $$$               btc = real(rad2bt(f,rc));
-% $$$               btobs(iday,ilat,:,z) = nanmean(bto,2);
-% $$$               btcal(iday,ilat,:,z) = nanmean(btc,2);
-% $$$               bias(iday,ilat,:,z)  = nanmean(bto-btc,2);
-% $$$               bias_std(iday,ilat,:,z) = nanstd(bto-btc,0,2);
-              robs(iday,ilat,:,z) = nanmean(r,2);
-              rcal(iday,ilat,:,z) = nanmean(rc,2);
-              rcldcal(iday,ilat,:,z) = nanmean(rcld,2);
-              rbias_std(iday, ilat,:) = nanstd(r-rc,0,2);
-              rcbias_std(iday, ilat,:) = nanstd(r-rcld,0,2);
+% $$$               btobs(iday,ifor,:,z) = nanmean(bto,2);
+% $$$               btcal(iday,ifor,:,z) = nanmean(btc,2);
+% $$$               bias(iday,ifor,:,z)  = nanmean(bto-btc,2);
+% $$$               bias_std(iday,ifor,:,z) = nanstd(bto-btc,0,2);
+              robs(iday,ifor,:,z) = nanmean(r,2);
+              rcal(iday,ifor,:,z) = nanmean(rc,2);
+              rcldcal(iday,ifor,:,z) = nanmean(rcld,2);
+              rbias_std(iday, ifor,:) = nanstd(r-rc,0,2);
+              rcbias_std(iday, ifor,:) = nanstd(r-rcld,0,2);
               
-              lat_mean(iday,ilat,z) = nanmean(p2.rlat);
-              lon_mean(iday,ilat,z) = nanmean(p2.rlon);
-              solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
-              rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
-              count(iday,ilat,z) = sum(bincount(1,:))';
-              stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
-              iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-              ptemp_mean(iday,ilat,:,z) = nanmean(p.ptemp,2);
-              gas1_mean(iday,ilat,:,z) = nanmean(p.gas_1,2);
-              gas3_mean(iday,ilat,:,z) = nanmean(p.gas_3,2);
-              spres_mean(iday,ilat,z) = nanmean(p.spres);
-              nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
-              satzen_mean(iday,ilat,z) = nanmean(p.satzen);
-              plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
-              mmwater_mean(iday,ilat) = nanmean(binwater);
-% $$$               scanang_mean(iday,ilat,z) = nanmean(p.scanang);
+              lat_mean(iday,ifor,z) = nanmean(p2.rlat);
+              lon_mean(iday,ifor,z) = nanmean(p2.rlon);
+              solzen_mean(iday,ifor,z) = nanmean(p2.solzen);
+              rtime_mean(iday,ifor,z)  = nanmean(p2.rtime);
+              count(iday,ifor,z) = sum(bincount(1,:))';
+              stemp_mean(iday,ifor,z) = nanmean(p2.stemp);
+              iudef4_mean(iday,ifor,z) = nanmean(p2.iudef(4,:));
+              ptemp_mean(iday,ifor,:,z) = nanmean(p2.ptemp,2);
+              gas1_mean(iday,ifor,:,z) = nanmean(p2.gas_1,2);
+              gas3_mean(iday,ifor,:,z) = nanmean(p2.gas_3,2);
+              spres_mean(iday,ifor,z) = nanmean(p2.spres);
+              nlevs_mean(iday,ifor,z) = nanmean(p2.nlevs);
+              satzen_mean(iday,ifor,z) = nanmean(p2.satzen);
+              plevs_mean(iday,ifor,:,z) = nanmean(p2.plevs,2);
+              mmwater_mean(iday,ifor) = nanmean(binwater);
+% $$$               scanang_mean(iday,ifor,z) = nanmean(p2.scanang);
           end  % ifov (z)
-      end  % end loop over ilat
+      end  % end loop over ifor
           
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_random_fs_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_random_fs_scanang_%s', ...
            int2str(year), sDescriptor));
 eval_str = ['save ' outfile ' robs rcal rcldcal *_std *_mean count '];
 eval(eval_str);

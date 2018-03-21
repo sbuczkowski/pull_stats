@@ -11,7 +11,7 @@
 # 6 = asc, land
 
 # sbatch options
-#SBATCH --job-name=RUN_HR_PULL_STATS
+#SBATCH --job-name=RUN_LR_PULL_STATS
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
@@ -20,9 +20,9 @@
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=03:59:00
+#SBATCH --time=03:00:00
 # low res has data from 2012 to present: 4 years
-#SBATCH --array=6
+#SBATCH --array=1-4
 #SBATCH --requeue
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
@@ -39,7 +39,7 @@ MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); run_pull_stats_hires($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); run_pull_stats_random_fs_scanangle($1); exit"
     
 echo "Finished with srun of run_pull_stats"
 

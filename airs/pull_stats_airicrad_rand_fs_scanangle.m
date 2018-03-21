@@ -1,4 +1,4 @@
-function pull_stats_airicrad_rand(year, filter, cfg);
+function pull_stats_airicrad_rand_fs_scanangle(year, filter, cfg);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -60,14 +60,14 @@ if bCheckConfig & isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
 
-basedir = fullfile(rtpdir, int2str(year), 'random');
+basedir = fullfile(rtpdir, int2str(year), 'random_fs');
 dayfiles = dir(fullfile(basedir, 'era_airicrad_day*_random_fs.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % calculate latitude bins
-nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+% $$$ nbins=20; % gives 2N+1 element array of lat bin boundaries
+% $$$ latbins = equal_area_spherical_bands(nbins);
+% $$$ nlatbins = length(latbins);
 
 iday = 1;
 % $$$ for giday = 1:100:length(dayfiles)
@@ -115,14 +115,17 @@ for giday = 1:length(dayfiles)
       end
 
       pp = rtp_sub_prof(p, k);
+      p = pp;
+      k = find(abs(p.rlat) < 60);
+      pp = rtp_sub_prof(p, k);
       clear p;
       
       if bRunKlayers
           % klayers kills previous sarta in the rtp structures so
           % we need to save values and re-insert after klayers
           % finishes
-          rcld = pp.rcld;
-          rclr = pp.rclr;
+          rcalc = pp.rcalc;
+          sarta_rclearcalc = pp.sarta_rclearcalc;
           tcc = pp.tcc;
           
           % run klayers on the rtp data to convert levels -> layers
@@ -142,10 +145,10 @@ for giday = 1:length(dayfiles)
           f = h.vchan;  % AIRS proper frequencies
 
           % restore sarta values
-          pp.rcld = rcld;
-          pp.rclr = rclr;
+          pp.rcalc = rcalc;
+          pp.sarta_rclearcalc = sarta_rclearcalc;
           pp.tcc = tcc;
-          clear rcld rclr tcc;
+          clear rcalc sarta_rclearcalc tcc;
           
           % get column water
           mmwater = mmwater_rtp(h, pp);
@@ -185,16 +188,15 @@ for giday = 1:length(dayfiles)
 %          kg = setdiff(1:n,k);
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
-         pp.rclr(i,k) = NaN;
-         pp.rcld(i,k) = NaN;         
+         pp.rcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
       % Loop over latitude bins
-      for ilat = 1:nlatbins-1
+      nfors = 90; 
+      for ifor = 1:nfors
           % subset based on latitude bin
-          inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                     latbins(ilat+1));
+          inbin = find(pp.xtrack == ifor);
           p = rtp_sub_prof(pp,inbin);
           bincount = count_all(:,inbin); 
           binwater = mmwater(inbin);
@@ -262,64 +264,65 @@ for giday = 1:length(dayfiles)
                    & p.cprbot>0 & p.cprtop>0);
 
           ice_ind = find(lIce);
-          count_ice(iday, ilat) = length(ice_ind);
-          ctype_mean(iday, ilat) = nanmean(p.ctype(ice_ind));
-          cngwat_mean(iday, ilat) = nanmean(p.cngwat(ice_ind));
-          cpsize_mean(iday, ilat) = nanmean(p.cpsize(ice_ind));
-          cprbot_mean(iday, ilat) = nanmean(p.cprbot(ice_ind));
-          cprtop_mean(iday, ilat) = nanmean(p.cprtop(ice_ind));
+          count_ice(iday, ifor) = length(ice_ind);
+          ctype_mean(iday, ifor) = nanmean(p.ctype(ice_ind));
+          cngwat_mean(iday, ifor) = nanmean(p.cngwat(ice_ind));
+          cpsize_mean(iday, ifor) = nanmean(p.cpsize(ice_ind));
+          cprbot_mean(iday, ifor) = nanmean(p.cprbot(ice_ind));
+          cprtop_mean(iday, ifor) = nanmean(p.cprtop(ice_ind));
           
           lWat = (p.ctype2==101 & p.cfrac2>0 & p.cngwat2>0 & p.cpsize2>0 ...
                    & p.cprbot2>0 & p.cprtop2>0);
 
           wat_ind = find(lWat);
-          count_water(iday, ilat) = length(wat_ind); 
-          ctype2_mean(iday, ilat) = nanmean(p.ctype2(wat_ind));
-          cngwat2_mean(iday, ilat) = nanmean(p.cngwat2(wat_ind));
-          cpsize2_mean(iday, ilat) = nanmean(p.cpsize2(wat_ind));
-          cprbot2_mean(iday, ilat) = nanmean(p.cprbot2(wat_ind));
-          cprtop2_mean(iday, ilat) = nanmean(p.cprtop2(wat_ind));
+          count_water(iday, ifor) = length(wat_ind); 
+          ctype2_mean(iday, ifor) = nanmean(p.ctype2(wat_ind));
+          cngwat2_mean(iday, ifor) = nanmean(p.cngwat2(wat_ind));
+          cpsize2_mean(iday, ifor) = nanmean(p.cpsize2(wat_ind));
+          cprbot2_mean(iday, ifor) = nanmean(p.cprbot2(wat_ind));
+          cprtop2_mean(iday, ifor) = nanmean(p.cprtop2(wat_ind));
 
           % cloud fraction gets averaged over ALL obs
-          cfrac_mean(iday, ilat) = nanmean(p.cfrac);
-          cfrac2_mean(iday, ilat) = nanmean(p.cfrac2);
-          cfrac12_mean(iday, ilat) = nanmean(p.cfrac12);
+          cfrac_mean(iday, ifor) = nanmean(p.cfrac);
+          cfrac2_mean(iday, ifor) = nanmean(p.cfrac2);
+          cfrac12_mean(iday, ifor) = nanmean(p.cfrac12);
           
           % Radiance mean and std
           r  = p.robs1;
-          cldy_calc = p.rcld;
-          clr_calc = p.rclr;
+          cldy_calc = p.rcalc;
+          clr_calc = p.sarta_rclearcalc;
           
           % spectral
-          robs(iday,ilat,:) = nanmean(r,2);
-          rcldy(iday,ilat,:) = nanmean(cldy_calc,2);
-          rcldybias_std(iday,ilat,:) = nanstd(r-cldy_calc,0,2);
-          rclr(iday,ilat,:) = nanmean(clr_calc,2);
-          rclrbias_std(iday,ilat,:) = nanstd(r-clr_calc,0,2);
+          robs(iday,ifor,:) = nanmean(r,2);
+          rcldy(iday,ifor,:) = nanmean(cldy_calc,2);
+          rcldybias_std(iday,ifor,:) = nanstd(r-cldy_calc,0,2);
+          rclr(iday,ifor,:) = nanmean(clr_calc,2);
+          rclrbias_std(iday,ifor,:) = nanstd(r-clr_calc,0,2);
           
-          lat_mean(iday,ilat) = nanmean(p.rlat);
-          lon_mean(iday,ilat) = nanmean(p.rlon);
-          solzen_mean(iday,ilat) = nanmean(p.solzen);
-          rtime_mean(iday,ilat)  = nanmean(p.rtime);
-          count(iday,ilat,:) = sum(bincount,2)';
-          tcc_mean(iday, ilat) = nanmean(p.tcc);
-          stemp_mean(iday,ilat) = nanmean(p.stemp);
-          ptemp_mean(iday,ilat,:) = nanmean(p.ptemp,2);
-          gas1_mean(iday,ilat,:) = nanmean(p.gas_1,2);
-          gas3_mean(iday,ilat,:) = nanmean(p.gas_3,2);
-          spres_mean(iday,ilat) = nanmean(p.spres);
-          nlevs_mean(iday,ilat) = nanmean(p.nlevs);
-          iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
-          mmwater_mean(iday,ilat) = nanmean(binwater);
-          satzen_mean(iday,ilat) = nanmean(p.satzen);
-          plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
+          lat_mean(iday,ifor) = nanmean(p.rlat);
+          lon_mean(iday,ifor) = nanmean(p.rlon);
+          scanang_mean(iday,ifor) = nanmean(p.scanang);
+          solzen_mean(iday,ifor) = nanmean(p.solzen);
+          rtime_mean(iday,ifor)  = nanmean(p.rtime);
+          count(iday,ifor,:) = sum(bincount,2)';
+          tcc_mean(iday, ifor) = nanmean(p.tcc);
+          stemp_mean(iday,ifor) = nanmean(p.stemp);
+          ptemp_mean(iday,ifor,:) = nanmean(p.ptemp,2);
+          gas1_mean(iday,ifor,:) = nanmean(p.gas_1,2);
+          gas3_mean(iday,ifor,:) = nanmean(p.gas_3,2);
+          spres_mean(iday,ifor) = nanmean(p.spres);
+          nlevs_mean(iday,ifor) = nanmean(p.nlevs);
+          iudef4_mean(iday,ifor) = nanmean(p.iudef(4,:));
+          mmwater_mean(iday,ifor) = nanmean(binwater);
+          satzen_mean(iday,ifor) = nanmean(p.satzen);
+          plevs_mean(iday,ifor,:) = nanmean(p.plevs,2);
       end  % end loop over latitudes
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_fs_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_fs_scanang_%s', ...
            int2str(year), sDescriptor));
-eval_str = ['save ' outfile [' robs rcl* *_mean count* latbins ' ...
+eval_str = ['save ' outfile [' robs rcl* *_mean count* ' ...
                     'trace']];
 eval(eval_str);

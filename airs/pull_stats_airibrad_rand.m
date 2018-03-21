@@ -310,7 +310,7 @@ end  % giday
 % $$$ startdir='/asl/rtp_lustre';
 startdir='/home/sbuczko1/WorkingFiles/';
 outfile = [startdir 'data/stats/airs/rtp_airibrad_era_rad_kl_' ...
-           int2str(year) '_random' sDescriptor '-provisional'];
+           int2str(year) '_random' sDescriptor ];
 eval_str = ['save ' outfile [' robs rcl* *_mean count* latbins ' ...
                     'trace']];
 % $$$ eval_str = ['save ' outfile ' robs *_mean count latbins trace'];

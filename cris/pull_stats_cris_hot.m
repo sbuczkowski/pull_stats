@@ -1,4 +1,4 @@
-function pull_stats_cris_random(year, filter, cfg);
+function pull_stats_cris_hot(year, filter);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -21,55 +21,23 @@ addpath ~/git/rtp_prod2/util
 addpath /asl/rtp_prod/cris/unapod
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
-addpath /home/sbuczko1/git/rtp_prod2/cris  % cris_lowres_chans
+addpath /home/sbuczko1/git/rtp_prod2/cris/scripts  % cris_lowres_chans
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
 
 [sID, sTempPath] = genscratchpath();
 
-% check for existence of configuration struct
-bCheckConfig = false;
-if nargin == 3
-    bCheckConfig = true;
-end
-
-% record run start datetime in output stats file for tracking
-trace.RunDate = datetime('now','TimeZone','local','Format', ...
-                         'd-MMM-y HH:mm:ss Z');
-trace.Reason = 'Normal pull_stats runs';
-if bCheckConfig & isfield(cfg, 'Reason')
-    trace.Reason = cfg.Reason;
-end
-
-bRunKlayers = true;
 klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
                 'klayers_airs_wetwater'];
-if bCheckConfig & isfield(cfg, 'klayers') & cfg.klayers == false
-    bRunKlayers = false;
-end
-trace.klayers = bRunKlayers;
-
-trace.droplayers = false;
-if bCheckConfig & isfield(cfg, 'droplayers') & cfg.droplayers == true
-    trace.droplayers = true;
-end
-
-rtpdir = '/asl/rtp/rtp_cris_ccast_lowres/';
-if bCheckConfig & isfield(cfg, 'rtpdir')
-    rtpdir = cfg.rtpdir;
-end
-
-statsdir = '/asl/data/stats/cris';
-if bCheckConfig & isfield(cfg, 'statsdir')
-    statsdir = cfg.statsdir;
-end
-
-basedir = fullfile(rtpdir, 'random_fs', int2str(year));
-dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_random_fs.rtp'));
-fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 % Get proper frequencies for these data
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_lowres_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
+
+basedir = fullfile('/asl/rtp/rtp_cris_ccast_lowres/hot', ...
+                   int2str(year));
+% $$$ basedir = fullfile('/home/sbuczko1/WorkingFiles/rtp_cris_ccast_lowres/random', ...
+% $$$                    int2str(year));
+dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_hot.rtp'));
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
@@ -86,54 +54,54 @@ for giday = 1:length(dayfiles)
 
       switch filter
         case 1
-          k = find(p.solzen > 90); % descending node (night)
-          sDescriptor='desc';
+          k = find(p.iudef(4,:) == 1); % descending node (night)
+          sDescriptor='_desc';
         case 2
-          k = find(p.solzen > 90 & p.landfrac == 0); % descending node
+          k = find(p.iudef(4,:) == 1 & p.landfrac == 0); % descending node
                                                          % (night), ocean
-          sDescriptor='desc_ocean';
+          sDescriptor='_desc_ocean';
         case 3
-          k = find(p.solzen > 90 & p.landfrac == 1); % descending node
+          k = find(p.iudef(4,:) == 1 & p.landfrac == 1); % descending node
                                                         % (night), land
-          sDescriptor='desc_land';
+          sDescriptor='_desc_land';
         case 4
-          k = find(p.solzen <= 90); % ascending node (day)
-          sDescriptor='asc';
+          k = find(p.iudef(4,:) == 0); % ascending node (day)
+          sDescriptor='_asc';
         case 5
-          k = find(p.solzen <= 90 & p.landfrac == 0); % ascending node
+          k = find(p.iudef(4,:) == 0 & p.landfrac == 0); % ascending node
                                                          % (day), ocean
-          sDescriptor='asc_ocean';
+          sDescriptor='_asc_ocean';
         case 6
-          k = find(p.solzen <= 90 & p.landfrac == 1); % ascending node
+          k = find(p.iudef(4,:) == 0 & p.landfrac == 1); % ascending node
                                                         % (day), land
-          sDescriptor='asc_land';
+          sDescriptor='_asc_land';
       end
 
       pp = rtp_sub_prof(p, k);
 
-      % run klayers on the rtp data to convert levels -> layers
-      % save calcs as the re-run of klayers wipes them out
-      rclr = pp.rclr;
-      rcld = pp.rcld;
-      fprintf(1, '>>> running klayers... ');
-      fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
-      rtpwrite(fn_rtp1, h,ha,pp,pa);
-      clear pp;
-      fn_rtp2 = fullfile(sTempPath, ['cris_' sID '_2.rtp']);
-      klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
-                     ' > ' sTempPath '/kout.txt'];
-      unix(klayers_run);
-      fprintf(1, 'Done\n');
-
-      % Read klayers output into local rtp variables
-      [h,ha,pp,pa] = rtpread(fn_rtp2);
-      % restore rclr
-      pp.rclr = rclr;
-      pp.rcld = rcld;
-      clear rclr rcld;
-      
-      % get column water
-      mmwater = mmwater_rtp(h, pp);
+% $$$       % run klayers on the rtp data to convert levels -> layers
+% $$$       % save calcs as the re-run of klayers wipes them out
+% $$$       sarta_rclearcalc = pp.sarta_rclearcalc;
+% $$$       rcalc = pp.rcalc;
+% $$$       fprintf(1, '>>> running klayers... ');
+% $$$       fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
+% $$$       rtpwrite(fn_rtp1, h,ha,pp,pa);
+% $$$       clear pp;
+% $$$       fn_rtp2 = fullfile(sTempPath, ['cris_' sID '_2.rtp']);
+% $$$       klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
+% $$$                      ' > ' sTempPath '/kout.txt'];
+% $$$       unix(klayers_run);
+% $$$       fprintf(1, 'Done\n');
+% $$$ 
+% $$$       % Read klayers output into local rtp variables
+% $$$       [h,ha,pp,pa] = rtpread(fn_rtp2);
+% $$$       % restore sarta_rclearcalc
+% $$$       pp.sarta_rclearcalc = sarta_rclearcalc;
+% $$$       pp.rcalc = rcalc;
+% $$$       clear sarta_rclearcalc rcalc;
+% $$$       
+% $$$       % get column water
+% $$$       mmwater = mmwater_rtp(h, pp);
 
       % Check for obs with layer profiles that go lower than
       % topography. Need to check nlevs and NaN out any layers
@@ -160,6 +128,10 @@ for giday = 1:length(dayfiles)
           % subset based on latitude bin
           inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
                        latbins(ilat+1));
+          if (length(inbin) == 0)
+              continue;  % no obs in current bin. go to next latbin
+          end
+          
           p = rtp_sub_prof(pp,inbin);
           
           for z = 1:9  % loop over FOVs to further sub-select
@@ -167,46 +139,42 @@ for giday = 1:length(dayfiles)
               p2 = rtp_sub_prof(p, ifov);
               
               bincount = count_all(:,inbin,z); 
-              binwater = mmwater(inbin);        
+% $$$               binwater = mmwater(inbin);        
               % Loop over obs in day
               % Radiance mean and std
               
               r  = p2.robs1;
-              rc = p2.rclr;
-              rcld = p2.rcld;
+% $$$               rc = p2.sarta_rclearcalc;
+% $$$               rcld = p2.rcalc;
               
               % leave as sinc for test
               % Convert r to rham
               r = box_to_ham(r);  % assumes r in freq order!!  Needed
                                   % for lowres
               
-% $$$               bto = real(rad2bt(f,r));
-% $$$               btc = real(rad2bt(f,rc));
-% $$$               btobs(iday,ilat,:,z) = nanmean(bto,2);
-% $$$               btcal(iday,ilat,:,z) = nanmean(btc,2);
-% $$$               bias(iday,ilat,:,z)  = nanmean(bto-btc,2);
-% $$$               bias_std(iday,ilat,:,z) = nanstd(bto-btc,0,2);
               robs(iday,ilat,:,z) = nanmean(r,2);
-              rcal(iday,ilat,:,z) = nanmean(rc,2);
-              rcldcal(iday,ilat,:,z) = nanmean(rcld,2);
-              rbias_std(iday, ilat,:) = nanstd(r-rc,0,2);
-              rcbias_std(iday, ilat,:) = nanstd(r-rcld,0,2);
+% $$$               rcal(iday,ilat,:,z) = nanmean(rc,2);
+% $$$               rcldcal(iday,ilat,:,z) = nanmean(rcld,2);
+% $$$               rbias_std(iday, ilat,:) = nanstd(r-rc,0,2);
+% $$$               rcbias_std(iday, ilat,:) = nanstd(r-rcld,0,2);
               
               lat_mean(iday,ilat,z) = nanmean(p2.rlat);
               lon_mean(iday,ilat,z) = nanmean(p2.rlon);
               solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
+              solazi_mean(iday,ilat,z) = nanmean(p2.solazi);
               rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
               count(iday,ilat,z) = sum(bincount(1,:))';
               stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
               iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-              ptemp_mean(iday,ilat,:,z) = nanmean(p.ptemp,2);
-              gas1_mean(iday,ilat,:,z) = nanmean(p.gas_1,2);
-              gas3_mean(iday,ilat,:,z) = nanmean(p.gas_3,2);
-              spres_mean(iday,ilat,z) = nanmean(p.spres);
-              nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
-              satzen_mean(iday,ilat,z) = nanmean(p.satzen);
-              plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
-              mmwater_mean(iday,ilat) = nanmean(binwater);
+              ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
+              gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
+              gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
+              spres_mean(iday,ilat,z) = nanmean(p2.spres);
+              nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
+              satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
+              satazi_mean(iday,ilat,z) = nanmean(p2.satazi);
+              plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
+% $$$               mmwater_mean(iday,ilat) = nanmean(binwater);
 % $$$               scanang_mean(iday,ilat,z) = nanmean(p.scanang);
           end  % ifov (z)
       end  % end loop over ilat
@@ -214,7 +182,7 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_random_fs_%s', ...
-           int2str(year), sDescriptor));
-eval_str = ['save ' outfile ' robs rcal rcldcal *_std *_mean count '];
+eval_str = ['save /home/sbuczko1/WorkingFiles/data/stats/cris/rtp_cris_lowres_rad_'  int2str(year) ...
+            '_hot' sDescriptor ' robs *_mean count '];
+% $$$             '_random' sDescriptor '  btobs btcal bias bias_std *_mean count '];
 eval(eval_str);

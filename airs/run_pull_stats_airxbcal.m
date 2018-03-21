@@ -8,4 +8,5 @@ slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 year = 2002+slurmindex;
 disp(year)
 disp(filter)
-pull_stats_airxbcal(year,filter);
+cfg.klayers = false;
+pull_stats_airxbcal(year,filter,cfg);

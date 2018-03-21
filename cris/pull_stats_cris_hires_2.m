@@ -22,6 +22,7 @@ addpath /asl/rtp_prod/cris/unapod
 addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
+addpath /home/sbuczko1/git/rtp_prod2/cris  % cris_hires_chans
 klayers_exec = '/asl/packages/klayersV205/BinV201/klayers_airs_wetwater';
 
 [sID, sTempPath] = genscratchpath();
@@ -35,8 +36,9 @@ nlatbins = length(latbins);
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_hires_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
 
-basedir = '/asl/rtp/rtp_cris_ccast_hires/clear/2016';
-dayfiles = dir(fullfile(basedir, 'cris_hr_ecmwf_csarta_ch4x11_d201601*_clear.rtp'));
+basedir = '/asl/rtp/rtp_cris_ccast_hires/clear_daily/2015';
+sSubset = 'clear';
+dayfiles = dir(fullfile(basedir, ['rtp*_' sSubset '.rtp']));
 
 iday = 1;
 % for giday = 1:50:length(dayfiles)
@@ -122,7 +124,7 @@ for giday = 1:length(dayfiles)
          rc = p.rcalc;
 
          % Convert r to rham
-         r = box_to_ham(r);  % assumes r in freq order!!
+% $$$          r = box_to_ham(r);  % assumes r in freq order!!
 
          % B(T) bias mean and std
 % $$$          bto = real(rad2bt(f,r));
@@ -153,7 +155,7 @@ for giday = 1:length(dayfiles)
       iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-eval_str = ['save /asl/data/stats/cris/rtp_cris_hires_ecmwf_ch4x11_rad_'  int2str(year) ...
+eval_str = ['save /asl/data/stats/cris/rtp_cris_hires_era_sinc_rad_'  int2str(year) ...
             '_clear' sDescriptor ' robs rcal rbias_std *_mean count '];
 
 eval(eval_str);
