@@ -60,9 +60,16 @@ if bCheckConfig & isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
 
+llat = 60;
+if bCheckConfig & isfield(cfg, 'latlimit')
+    llat = cfg.latlimit;
+end
+
 basedir = fullfile(rtpdir, int2str(year), 'random_fs');
 dayfiles = dir(fullfile(basedir, 'era_airicrad_day*_random_fs.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
+
+
 
 % calculate latitude bins
 % $$$ nbins=20; % gives 2N+1 element array of lat bin boundaries
@@ -116,7 +123,7 @@ for giday = 1:length(dayfiles)
 
       pp = rtp_sub_prof(p, k);
       p = pp;
-      k = find(abs(p.rlat) < 60);
+      k = find(abs(p.rlat) <= llat);
       pp = rtp_sub_prof(p, k);
       clear p;
       
@@ -321,8 +328,8 @@ for giday = 1:length(dayfiles)
    end % if a.bytes > 1000000
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_fs_scanang_%s', ...
-           int2str(year), sDescriptor));
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_l%d_%s_random_fs_scanang_%s', ...
+           llat, int2str(year), sDescriptor));
 eval_str = ['save ' outfile [' robs rcl* *_mean count* ' ...
                     'trace']];
 eval(eval_str);
