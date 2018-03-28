@@ -8,7 +8,7 @@ slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 %cfg.rtpdir = '/home/sbuczko1/WorkingFiles/rtp_airicrad_v6';
 %cfg.statsdir = '/home/sbuczko1/WorkingFiles/data/stats/airs';
 cfg.klayers = true;
-cfg.latlimit = 90; % include all obs
+cfg.latlimit = 50; % +-50
 
 year = 2002+slurmindex;
 disp(year)

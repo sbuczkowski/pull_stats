@@ -63,9 +63,9 @@ dayfiles = dir(fullfile(basedir, 'era_airxbcal_day*_clear.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
 iday = 1;
-% $$$ for giday = 1:100:length(dayfiles)
-for giday = 1:length(dayfiles)
-   fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
+% $$$ for giday = 1:length(dayfiles)
+for giday = 18:20
+    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes > 100000
       [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
@@ -223,7 +223,7 @@ for giday = 1:length(dayfiles)
    end % if a.bytes > 1000000
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airxbcal_era_rad_kl_%s_random_fs_scanang_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airxbcal_era_rad_kl_018-020_%s_random_fs_scanang_%s', ...
            int2str(year), sDescriptor));
 eval_str = ['save ' outfile [' robs rcl* *_mean count* ' ...
                     'trace']];

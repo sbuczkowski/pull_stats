@@ -126,8 +126,8 @@ for giday = 1:length(dayfiles)
       
       % run klayers on the rtp data to convert levels -> layers
       % save calcs as the re-run of klayers wipes them out
-      rclr = pp.sarta_rclearcalc;
-      rcld = pp.rcalc;
+      rclr = pp.rclr;
+      rcld = pp.rcld;
       fprintf(1, '>>> running klayers... ');
       fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
       rtpwrite(fn_rtp1, h,ha,pp,pa);
@@ -141,8 +141,8 @@ for giday = 1:length(dayfiles)
       % Read klayers output into local rtp variables
       [h,ha,pp,pa] = rtpread(fn_rtp2);
       % restore sarta_rclearcalc
-      pp.sarta_rclearcalc = rclr;
-      pp.rcalc = rcld;
+      pp.rclr = rclr;
+      pp.rcld = rcld;
       clear rclr rcld
       
       % get column water
@@ -183,8 +183,8 @@ for giday = 1:length(dayfiles)
               % Radiance mean and std
               
               r  = p2.robs1;
-              rc = p2.sarta_rclearcalc;
-              rcld = p2.rcalc;
+              rc = p2.rclr;
+              rcld = p2.rcld;
               
               % leave as sinc for test
               % Convert r to rham
@@ -225,7 +225,7 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%d_%s_random_fs_scanang_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_l%d_%s_random_fs_scanang_%s', ...
            llat, int2str(year), sDescriptor));
 eval_str = ['save ' outfile ' robs rcal rcldcal *_std *_mean count '];
 eval(eval_str);

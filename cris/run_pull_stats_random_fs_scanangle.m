@@ -5,7 +5,7 @@ addpath(genpath(rtp_sw_dir));
 % grab the slurm array index for this process
 slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 
-cfg.latlimit = 90;  % all lats
+cfg.latlimit = 50;  % all lats
 
 year = 2012+slurmindex;
 disp(year)
