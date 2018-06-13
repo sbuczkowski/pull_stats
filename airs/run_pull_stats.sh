@@ -16,14 +16,14 @@
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=short
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=10:00:00
+#SBATCH --time=00:59:00
 # airxbcal has data from 2002 to present: 14 years
-#SBATCH --array=15
+#SBATCH --array=3
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 #SBATCH --mail-type=END

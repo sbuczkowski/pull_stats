@@ -36,14 +36,15 @@ f = cris_vchan(2, userLW, userMW, userSW);
 sSubset = 'clear';
 fprintf(1, '>> Running clear stats\n');
 
-% $$$ basedir = fullfile('/asl/rtp/rtp_cris_ccast_hires', [sSubset '_daily'], ...
-% $$$                    int2str(year));
+% $$$ basedir = fullfile('/asl/rtp/rtp_cris_ccast_hires', sSubset, int2str(year));
 basedir = fullfile('/asl/rtp/rtp_cris2_ccast_hires_a2v4_ref/', sSubset, ...
-                   int2str(year), 'stats_temp');
-% $$$ dayfiles = dir(fullfile(basedir, ['rtp*_' sSubset '.rtp']));
+                   int2str(year));
+
 fprintf(1, '>> looking for input concat files in %s\n', basedir);
-dayfiles = dir(fullfile(basedir, '*_csarta_*_d2018*.rtp'));
-% $$$ dayfiles = dir(fullfile(basedir, 'cris_ecmwf_csarta_clear_d20180216.rtp'));
+
+dayfiles = dir(fullfile(basedir, 'cris2_ecmwf_csarta_clear_d2018*.rtp'));
+% $$$ dayfiles = dir(fullfile(basedir, 'cris_ecmwf_csarta_clear_d2018*.rtp'));
+
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
 latbins = equal_area_spherical_bands(nbins);
@@ -60,30 +61,37 @@ for giday = 1:length(dayfiles)
       switch filter
         case 1
           k = find(p.solzen > 90); % descending node (night)
-          sDescriptor='_desc';
+          sDescriptor='desc';
         case 2
           k = find(p.solzen > 90 & p.landfrac == 0); % descending node
                                                          % (night), ocean
-          sDescriptor='_desc_ocean';
+          sDescriptor='desc_ocean';
         case 3
-          k = find(p.solzen > 90 & p.landfrac > 90); % descending node
+          k = find(p.solzen > 90 & p.landfrac == 1); % descending node
                                                         % (night), land
-          sDescriptor='_desc_land';
+          sDescriptor='desc_land';
         case 4
           k = find(p.solzen < 90); % ascending node (day)
-          sDescriptor='_asc';
+          sDescriptor='asc';
         case 5
-          k = find(p.solzen < 90 & p.landfrac < 90); % ascending node
+          k = find(p.solzen < 90 & p.landfrac == 0); % ascending node
                                                          % (day), ocean
-          sDescriptor='_asc_ocean';
+          sDescriptor='asc_ocean';
         case 6
           k = find(p.solzen < 90 & p.landfrac == 1); % ascending node
                                                         % (day), land
-          sDescriptor='_asc_land';
+          sDescriptor='asc_land';
       end
 
       pp = rtp_sub_prof(p, k);
       clear p
+
+      if length(pp.rtime) == 0
+          % no obs in current day for current filter. jump to next
+          % day
+          fprintf(2, '>>> No obs in current filter. SKIPPING DAY\n');
+          continue;
+      end
       
       % run klayers on the rtp data (Sergio is asking for this to
       % convert levels to layers for his processing?)
@@ -189,7 +197,11 @@ end  % giday
 
 % save all days to single yearly file
 eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_a2v4_ref_' ...
-            int2str(year) '_036-048_' sSubset sDescriptor ...
+            int2str(year) '_' sSubset '_' sDescriptor ...
             ' robs rcal rbias_std *_mean count '];
+% $$$ eval_str = ['save /asl/data/stats/cris/rtp_cris_hires_' ...
+% $$$             int2str(year) '_' sSubset '_' sDescriptor ...
+% $$$             ' robs rcal rbias_std *_mean count '];
+
 eval(eval_str);
 

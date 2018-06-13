@@ -21,8 +21,6 @@ addpath /asl/matlib/rtptools  % mmwater_rtp.m
 
 [sID, sTempPath] = genscratchpath();
 
-nchans = 2645;  % AIRICRAD/L1C channel space
-
 % check for existence of configuration struct
 bCheckConfig = false;
 if nargin == 3
@@ -60,14 +58,42 @@ if bCheckConfig & isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
 
-basedir = fullfile(rtpdir, int2str(year), 'random');
+basedir = fullfile(rtpdir, int2str(year), 'random_fs');
 dayfiles = dir(fullfile(basedir, 'era_airicrad_day*_random_fs.rtp'));
-fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
+ndays = length(dayfiles);
+fprintf(1,'>>> numfiles = %d\n', ndays);
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+latbinedges = equal_area_spherical_bands(nbins);
+nlatbins = length(latbinedges)-1;
+
+nchans = 2645;  % AIRICRAD/L1C channel space
+nlevs = 101;  % klayers output
+
+% allocate final accumulator arrays
+robs = zeros(ndays, nlatbins, nchans);
+rclr = zeros(ndays, nlatbins, nchans);
+rcldy = zeros(ndays, nlatbins, nchans);
+rcldybias_std = zeros(ndays, nlatbins, nchans);
+rclrbias_std = zeros(ndays, nlatbins, nchans);
+
+lat_mean = zeros(ndays, nlatbins);
+lon_mean = zeros(ndays, nlatbins);
+solzen_mean = zeros(ndays, nlatbins);
+rtime_mean = zeros(ndays, nlatbins); 
+count = zeros(ndays, nlatbins, nchans);
+tcc_mean = zeros(ndays, nlatbins);
+stemp_mean = zeros(ndays, nlatbins);
+ptemp_mean = zeros(ndays, nlatbins, nlevs);
+gas1_mean = zeros(ndays, nlatbins, nlevs);
+gas3_mean = zeros(ndays, nlatbins, nlevs);
+spres_mean = zeros(ndays, nlatbins);
+nlevs_mean = zeros(ndays, nlatbins);
+iudef4_mean = zeros(ndays, nlatbins);
+mmwater_mean = zeros(ndays, nlatbins);
+satzen_mean = zeros(ndays, nlatbins);
+plevs_mean = zeros(ndays, nlatbins, nlevs);
 
 iday = 1;
 % $$$ for giday = 1:100:length(dayfiles)
@@ -121,9 +147,9 @@ for giday = 1:length(dayfiles)
           % klayers kills previous sarta in the rtp structures so
           % we need to save values and re-insert after klayers
           % finishes
-          rcld = pp.rcld;
-          rclr = pp.rclr;
-          tcc = pp.tcc;
+          tmp_rcld = pp.rcld;
+          tmp_rclr = pp.rclr;
+          tmp_tcc = pp.tcc;
           
           % run klayers on the rtp data to convert levels -> layers
           fprintf(1, '>>> running klayers... ');
@@ -142,10 +168,10 @@ for giday = 1:length(dayfiles)
           f = h.vchan;  % AIRS proper frequencies
 
           % restore sarta values
-          pp.rcld = rcld;
-          pp.rclr = rclr;
-          pp.tcc = tcc;
-          clear rcld rclr tcc;
+          pp.rcld = tmp_rcld;
+          pp.rclr = tmp_rclr;
+          pp.tcc = tmp_tcc;
+          clear tmp_rcld tmp_rclr tmp_tcc;
           
           % get column water
           mmwater = mmwater_rtp(h, pp);
@@ -170,7 +196,6 @@ for giday = 1:length(dayfiles)
               pp.ptemp(badlayers, i) = NaN;
           end
           
-          
       end
 
       % Initialize counts
@@ -186,15 +211,15 @@ for giday = 1:length(dayfiles)
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
          pp.rclr(i,k) = NaN;
-         pp.rcld(i,k) = NaN;         
+         pp.rcld(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
       % Loop over latitude bins
-      for ilat = 1:nlatbins-1
+      for ilat = 1:nlatbins
           % subset based on latitude bin
-          inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                     latbins(ilat+1));
+          inbin = find(pp.rlat > latbinedges(ilat) & pp.rlat <= ...
+                     latbinedges(ilat+1));
           p = rtp_sub_prof(pp,inbin);
           bincount = count_all(:,inbin); 
           binwater = mmwater(inbin);
@@ -292,9 +317,9 @@ for giday = 1:length(dayfiles)
           
           % spectral
           robs(iday,ilat,:) = nanmean(r,2);
+          rclr(iday,ilat,:) = nanmean(clr_calc,2);
           rcldy(iday,ilat,:) = nanmean(cldy_calc,2);
           rcldybias_std(iday,ilat,:) = nanstd(r-cldy_calc,0,2);
-          rclr(iday,ilat,:) = nanmean(clr_calc,2);
           rclrbias_std(iday,ilat,:) = nanstd(r-clr_calc,0,2);
           
           lat_mean(iday,ilat) = nanmean(p.rlat);
@@ -318,8 +343,8 @@ for giday = 1:length(dayfiles)
    end % if a.bytes > 1000000
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_fs_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_fs_newRTP_%s', ...
            int2str(year), sDescriptor));
-eval_str = ['save ' outfile [' robs rcl* *_mean count* latbins ' ...
+eval_str = ['save ' outfile [' robs rcl* *_mean count* latbinedges ' ...
                     'trace']];
 eval(eval_str);

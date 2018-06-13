@@ -53,7 +53,7 @@ cstr =[ 'bits1-4=NEdT[0.08 0.12 0.15 0.20 0.25 0.30 0.35 0.4 0.5 0.6 0.7' ...
   ' bits7-8=calflag&calchansummary[0=OK, 1=DCR, 2=moon, 3=other]' ];
 
 basedir = fullfile('/asl/rtp/rtp_airibrad_v5/', ...
-                   int2str(year), 'random');
+                   int2str(year), 'random_CSm1b');
 dayfiles = dir(fullfile(basedir, 'era_airibrad_day*_random.rtp'));
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 
@@ -114,6 +114,7 @@ for giday = 1:length(dayfiles)
           % klayers kills previous sarta in the rtp structures so
           % we need to save values and re-insert after klayers
           % finishes
+          rcalc = pp.rcalc;
           sarta_rclearcalc = pp.sarta_rclearcalc;
           tcc = pp.tcc;
           
@@ -134,9 +135,10 @@ for giday = 1:length(dayfiles)
           f = h.vchan;  % AIRS proper frequencies
 
           % restore sarta values
+          pp.rcalc = rcalc;
           pp.sarta_rclearcalc = sarta_rclearcalc;
           pp.tcc = tcc;
-          clear sarta_rclearcalc tcc;
+          clear rcalc sarta_rclearcalc tcc;
           
           % get column water
           mmwater = mmwater_rtp(h, pp);
@@ -176,6 +178,7 @@ for giday = 1:length(dayfiles)
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
          pp.rcalc(i,k) = NaN;
+         pp.sarta_rclearcalc(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
@@ -308,10 +311,9 @@ for giday = 1:length(dayfiles)
 end  % giday
 
 % $$$ startdir='/asl/rtp_lustre';
-startdir='/home/sbuczko1/WorkingFiles/';
+startdir='/asl/';
 outfile = [startdir 'data/stats/airs/rtp_airibrad_era_rad_kl_' ...
-           int2str(year) '_random' sDescriptor ];
+           int2str(year) '_random_CSm1b' sDescriptor ];
 eval_str = ['save ' outfile [' robs rcl* *_mean count* latbins ' ...
                     'trace']];
-% $$$ eval_str = ['save ' outfile ' robs *_mean count latbins trace'];
 eval(eval_str);
