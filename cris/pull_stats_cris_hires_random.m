@@ -118,13 +118,14 @@ for giday = 1:length(dayfiles)
     f = h.vchan;  % CrIS proper frequencies
 
     % nadir sub-select (**for 06132018 testing purposes**)
-    nadir_inds = find(prof.xtrack == 15 | prof.xtrack == 16);
-    p = rtp_sub_prof(prof, nadir_inds);
+% $$$     nadir_inds = find(prof.xtrack == 15 | prof.xtrack == 16);
+% $$$     p = rtp_sub_prof(prof, nadir_inds);
+    p = prof;
     fprintf(1, 'Pre/post nadir selection obs count: %d / %d\n', ...
             length(prof.robs1), length(p.robs1));
     clear prof
-    trace.PROCESSING_NOTE = ['Full-swath subset to nadir: xtrack ' ...
-                        '= 15,16'];
+    trace.PROCESSING_NOTE = ['Full-swath subset: xtrack ' ...
+                        '= ALL'];
     
     % sanity check on p.robs1 as read in. (There have been
     % instances where this array is short on the spectral
@@ -351,7 +352,7 @@ for giday = 1:length(dayfiles)
             
             iday = iday + 1
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris2_hires_ecmwf_rad_kl_%s_random_nadir_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_cris2_hires_ecmwf_rad_kl_%s_random_fs_%s', ...
                                      int2str(year), sDescriptor));
 eval_str = ['save ' outfile ' robs rclr rcld *_std *_mean count trace'];
 eval(eval_str);
