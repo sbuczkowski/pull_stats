@@ -37,7 +37,7 @@ sSubset = 'clear';
 fprintf(1, '>> Running clear stats\n');
 
 % $$$ basedir = fullfile('/asl/rtp/rtp_cris_ccast_hires', sSubset, int2str(year));
-basedir = fullfile('/asl/rtp/rtp_cris2_ccast_hires_a2v4_ref/', sSubset, ...
+basedir = fullfile('/asl/rtp/rtp_cris2_ccast_hires_j1v4_a2v4/', sSubset, ...
                    int2str(year));
 
 fprintf(1, '>> looking for input concat files in %s\n', basedir);
@@ -60,25 +60,25 @@ for giday = 1:length(dayfiles)
 
       switch filter
         case 1
-          k = find(p.solzen > 90); % descending node (night)
+          k = find(p.iudef(4,:) == 1); % descending node (night)
           sDescriptor='desc';
         case 2
-          k = find(p.solzen > 90 & p.landfrac == 0); % descending node
+          k = find(p.iudef(4,:) == 1 & p.landfrac == 0); % descending node
                                                          % (night), ocean
           sDescriptor='desc_ocean';
         case 3
-          k = find(p.solzen > 90 & p.landfrac == 1); % descending node
+          k = find(p.iudef(4,:) == 1 & p.landfrac == 1); % descending node
                                                         % (night), land
           sDescriptor='desc_land';
         case 4
-          k = find(p.solzen < 90); % ascending node (day)
+          k = find(p.iudef(4,:) == 0); % ascending node (day)
           sDescriptor='asc';
         case 5
-          k = find(p.solzen < 90 & p.landfrac == 0); % ascending node
+          k = find(p.iudef(4,:) == 0 & p.landfrac == 0); % ascending node
                                                          % (day), ocean
           sDescriptor='asc_ocean';
         case 6
-          k = find(p.solzen < 90 & p.landfrac == 1); % ascending node
+          k = find(p.iudef(4,:) == 0 & p.landfrac == 1); % ascending node
                                                         % (day), land
           sDescriptor='asc_land';
       end
@@ -97,7 +97,7 @@ for giday = 1:length(dayfiles)
       % convert levels to layers for his processing?)
 
       % first remove rcalc field and save it for later restore
-      rcalc = pp.rclr;
+      tmp_rcalc = pp.rclr;
       pp = rmfield(pp, 'rclr');
       
       fprintf(1, '>>> running klayers... ');
@@ -109,8 +109,8 @@ for giday = 1:length(dayfiles)
       unix(klayers_run);
       [h,ha,pp,pa] = rtpread(fn_rtp2);
       % restore rcalc
-      pp.rclr = rcalc;
-      clear rcalc;
+      pp.rclr = tmp_rcalc;
+      clear tmp_rcalc;
       
       fprintf(1, 'Done\n');
 
@@ -196,7 +196,7 @@ for giday = 1:length(dayfiles)
 end  % giday
 
 % save all days to single yearly file
-eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_a2v4_ref_' ...
+eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_j1v4_a2v4_' ...
             int2str(year) '_' sSubset '_' sDescriptor ...
             ' robs rcal rbias_std *_mean count '];
 % $$$ eval_str = ['save /asl/data/stats/cris/rtp_cris_hires_' ...

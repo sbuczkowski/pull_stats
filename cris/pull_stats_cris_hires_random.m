@@ -13,6 +13,7 @@ function pull_stats_cris_hires_random(year, filter, cfg);
 %**************************************************
 
 %year = 2014;
+fID = fopen('/home/sbuczko1/cris_hires_count_test.dat', 'w');
 
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
@@ -113,6 +114,8 @@ for giday = 1:length(dayfiles)
         fprintf(2, '**>> ERROR: short input rtp file %s\n', dayfiles(giday).name); 
         continue;
     end
+
+    day_str = sprintf('giday = %d, iday = %d',giday, iday);
     
     [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
     f = h.vchan;  % CrIS proper frequencies
@@ -218,9 +221,13 @@ for giday = 1:length(dayfiles)
                          latbin_edges(ilat+1));
             p = rtp_sub_prof(pp,inbin);
 
+            daylat_str = sprintf('%s, ilat = %d', day_str, ilat);
+            
             for z = 1:nfovs  % loop over FOVs to further sub-select
                 infov = find(p.ifov == z);
                 p2 = rtp_sub_prof(p, infov);
+
+                daylatfov_str = sprintf('%s, z = %d', daylat_str, z);
                 
                 count_infov = ones(length(infov), nchans);
                 % QA/QC checks for bad chans, etc go here and set
@@ -339,12 +346,22 @@ for giday = 1:length(dayfiles)
                 plevs_mean(iday,ilat,z,:) = nanmean(p2.plevs,2)';
                 mmwater_mean(iday,ilat) = nanmean(binwater);
 
+                fprintf(fID, '**> COUNT = %d  DBL STR: %s\n', ...
+                        count(iday, ilat, z, 1), daylatfov_str);
+                clear daylatfov_str
+                
             end  % ifov (z)
+            clear daylat_str
+            
         end  % end loop over ilat
+            clear day_str
             
             iday = iday + 1;
+
 end  % giday
-outfile = fullfile(statsdir, sprintf('TEST_rtp_cris2_hires_ecmwf_rad_kl_%s_random_fs_%s', ...
+fclose(fID)
+
+outfile = fullfile(statsdir, sprintf('TEST2_rtp_cris2_hires_ecmwf_rad_kl_%s_random_fs_%s', ...
                                      int2str(year), sDescriptor));
 eval_str = ['save ' outfile ' robs rclr rcld *_std *_mean count trace'];
 eval(eval_str);

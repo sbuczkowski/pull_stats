@@ -65,16 +65,45 @@ end
 
 basedir = fullfile(rtpdir, 'random_fs', int2str(year));
 dayfiles = dir(fullfile(basedir, 'cris_lr_era_d*_random_fs.rtp'));
-fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
+ndays = length(dayfiles);
+fprintf(1,'>>> numfiles = %d\n', ndays);
 
 % Get proper frequencies for these data
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_lowres_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
+nchans = length(f);
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+latbin_edges = equal_area_spherical_bands(nbins);
+nlatbins = length(latbin_edges)-1;
+
+nlevs = 101;  % klayers output
+nfovs = 9;    % FOVs/FOR
+
+% allocate final accumulator arrays
+robs = zeros(ndays, nlatbins, nfovs, nchans);
+rclr = zeros(ndays, nlatbins, nfovs, nchans);
+rcld = zeros(ndays, nlatbins, nfovs, nchans);
+rcldbias_std = zeros(ndays, nlatbins, nfovs, nchans);
+rclrbias_std = zeros(ndays, nlatbins, nfovs, nchans);
+
+lat_mean = zeros(ndays, nlatbins, nfovs);
+lon_mean = zeros(ndays, nlatbins, nfovs);
+solzen_mean = zeros(ndays, nlatbins, nfovs);
+rtime_mean = zeros(ndays, nlatbins, nfovs); 
+count = zeros(ndays, nlatbins, nfovs, nchans);
+tcc_mean = zeros(ndays, nlatbins, nfovs);
+stemp_mean = zeros(ndays, nlatbins, nfovs);
+ptemp_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+gas1_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+gas3_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+spres_mean = zeros(ndays, nlatbins, nfovs);
+nlevs_mean = zeros(ndays, nlatbins, nfovs);
+iudef4_mean = zeros(ndays, nlatbins, nfovs);
+mmwater_mean = zeros(ndays, nlatbins, nfovs);
+satzen_mean = zeros(ndays, nlatbins, nfovs);
+plevs_mean = zeros(ndays, nlatbins, nfovs, nlevs);
 
 iday = 1;
 % for giday = 1:50:length(dayfiles)
@@ -82,8 +111,10 @@ for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes > 100000
-      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
-
+       day_str = sprintf('giday = %d, iday = %d',giday, iday);
+       
+       [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+      
       switch filter
         case 1
           k = find(p.solzen > 90); % descending node (night)
@@ -113,8 +144,9 @@ for giday = 1:length(dayfiles)
 
       % run klayers on the rtp data to convert levels -> layers
       % save calcs as the re-run of klayers wipes them out
-      rclr = pp.rclr;
-      rcld = pp.rcld;
+      tmp_rclr = pp.rclr;
+      tmp_rcld = pp.rcld;
+      tmp_tcc = pp.tcc;
       fprintf(1, '>>> running klayers... ');
       fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
       rtpwrite(fn_rtp1, h,ha,pp,pa);
@@ -128,9 +160,10 @@ for giday = 1:length(dayfiles)
       % Read klayers output into local rtp variables
       [h,ha,pp,pa] = rtpread(fn_rtp2);
       % restore rclr
-      pp.rclr = rclr;
-      pp.rcld = rcld;
-      clear rclr rcld;
+      pp.rclr = tmp_rclr;
+      pp.rcld = tmp_rcld;
+      pp.tcc = tmp_tcc;
+      clear tmp_rclr tmp_rcld tmp_tcc;
       
       % get column water
       mmwater = mmwater_rtp(h, pp);
@@ -152,60 +185,138 @@ for giday = 1:length(dayfiles)
       % initialize counts and look for bad channels (what should
       % the iasi bad channel test look like?)
       [nchans, nobs] = size(pp.robs1);
-      nfovs = 9;
-      count_all = int8(ones(nchans, nobs, nfovs));
       
       % loop over latitude bins
       for ilat = 1:nlatbins-1
           % subset based on latitude bin
-          inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                       latbins(ilat+1));
+          inbin = find(pp.rlat > latbin_edges(ilat) & pp.rlat <= ...
+                       latbin_edges(ilat+1));
           p = rtp_sub_prof(pp,inbin);
+
+          daylat_str = sprintf('%s, ilat = %d', day_str, ilat);
           
           for z = 1:9  % loop over FOVs to further sub-select
-              ifov = find(p.ifov == z);
-              p2 = rtp_sub_prof(p, ifov);
+              infov = find(p.ifov == z);
+              p2 = rtp_sub_prof(p, infov);
+
+              daylatfov_str = sprintf('%s, z = %d', daylat_str, z);
               
-              bincount = count_all(:,inbin,z); 
+              count_infov = ones(length(infov), nchans);
+              % QA/QC checks for bad chans, etc go here and set
+              % elements of count_infov to zero
+
               binwater = mmwater(inbin);        
-              % Loop over obs in day
-              % Radiance mean and std
+
+              % Remove 'clouds' that have only partial defining
+              % characteristics (effects 0.2% of obs in test rtp data)
+              % cfrac=cngwat=0 but cpsize/cprtop/cprbot ~= 0
+              a = find(p2.cfrac==0 & p2.cngwat==0 & p2.cprtop>0);
+              p2.ctype(a)=-1;
+              a = find(p2.cfrac2==0 & p2.cngwat2==0 & p2.cprtop2>0);
+              p2.ctype2(a)=-1;
+
+              % replace 'bad data' placeholders in cprtop/cprbot (-9999
+              % -> NaN, esesntially except for 'clouds' from above)
+              a = find(p2.ctype==-1);
+              p2.cprtop(a)=NaN; p2.cprbot(a)=NaN;
+              a = find(p2.ctype2==-1);
+              p2.cprtop2(a)=NaN; p2.cprbot2(a)=NaN;
+
+              % massage situations where we have two of same cloud type
+              % in a single obs i.e. p2.ctype=p2.ctype2 (average to a
+              % single cloud)
+              dblwat = find(p2.ctype==101 & p2.ctype2==101);
+              p2.cfrac2(dblwat) = p2.cfrac(dblwat) + p2.cfrac2(dblwat);
+              p2.cpsize2(dblwat) = (p2.cpsize(dblwat) + ...
+                                    p2.cpsize2(dblwat))/2;
+              p2.cprtop2(dblwat) = (p2.cprtop(dblwat) + ...
+                                    p2.cprtop2(dblwat))/2;
+              p2.cprbot2(dblwat) = (p2.cprbot(dblwat) + ...
+                                    p2.cprbot2(dblwat))/2;
+              p2.cngwat2(dblwat) = (p2.cfrac(dblwat).*p2.cngwat(dblwat) + ...
+                                    p2.cfrac2(dblwat).*p2.cngwat2(dblwat))./ ...
+                  p2.cfrac2(dblwat);
+              p2.cfrac(dblwat)=0; p2.cpsize(dblwat)=0;
+              p2.cngwat(dblwat)= 0; p2.cprtop(dblwat)=NaN;
+              p2.cprbot(dblwat)=NaN; p2.ctype(dblwat)=-1;
               
-              r  = p2.robs1;
-              rc = p2.rclr;
-              rcld = p2.rcld;
+              dblice = find(p2.ctype==201 & p2.ctype2==201);
+              p2.cfrac(dblice) = p2.cfrac(dblice) + p2.cfrac2(dblice);
+              p2.cpsize(dblice) = (p2.cpsize(dblice) + ...
+                                   p2.cpsize2(dblice))/2;
+              p2.cprtop(dblice) = (p2.cprtop(dblice) + ...
+                                   p2.cprtop2(dblice))/2;
+              p2.cprbot(dblice) = (p2.cprbot(dblice) + ...
+                                   p2.cprbot2(dblice))/2;
+              p2.cngwat(dblice) = (p2.cfrac(dblice).*p2.cngwat(dblice) + ...
+                                   p2.cfrac2(dblice).*p2.cngwat2(dblice))./ ...
+                  p2.cfrac2(dblice);
+              p2.cfrac2(dblice)=0; p2.cpsize2(dblice)=0;
+              p2.cngwat2(dblice)= 0; p2.cprtop2(dblice)=NaN;
+              p2.cprbot2(dblice)=NaN; p2.ctype2(dblice)=-1;
               
-              % leave as sinc for test
-              % Convert r to rham
-              r = box_to_ham(r);  % assumes r in freq order!!  Needed
+              % at this point cloud fields should now be set so that
+              % ctype/cpsize/cngwat and similar contain only ice clouds
+              % (or none) and ctype2/cpsize2/cngwat2 and similar
+              % contain only water clouds (or none)
+              trace.NOTE_ON_CLOUD_VARS = ['ctype_mean and similar are average ' ...
+                                  'ICE cloud parameters, ctype2_mean and similar ' ...
+                                  'are average WATER cloud parameters'];
+
+              % pull out cloud parameters for averaging
+              % build logical array for each cloud type and pull out
+              % only values associated with a cloud for averaging
+              lIce = (p2.ctype==201 & p2.cfrac>0 & p2.cngwat>0 & p2.cpsize>0 ...
+                      & p2.cprbot>0 & p2.cprtop>0);
+
+              ice_ind = find(lIce);
+              count_ice(iday, ilat,z) = length(ice_ind);
+              ctype_mean(iday, ilat,z) = nanmean(p2.ctype(ice_ind));
+              cngwat_mean(iday, ilat,z) = nanmean(p2.cngwat(ice_ind));
+              cpsize_mean(iday, ilat,z) = nanmean(p2.cpsize(ice_ind));
+              cprbot_mean(iday, ilat,z) = nanmean(p2.cprbot(ice_ind));
+              cprtop_mean(iday, ilat,z) = nanmean(p2.cprtop(ice_ind));
+              
+              lWat = (p2.ctype2==101 & p2.cfrac2>0 & p2.cngwat2>0 & p2.cpsize2>0 ...
+                      & p2.cprbot2>0 & p2.cprtop2>0);
+
+              wat_ind = find(lWat);
+              count_water(iday, ilat,z) = length(wat_ind); 
+              ctype2_mean(iday, ilat,z) = nanmean(p2.ctype2(wat_ind));
+              cngwat2_mean(iday, ilat,z) = nanmean(p2.cngwat2(wat_ind));
+              cpsize2_mean(iday, ilat,z) = nanmean(p2.cpsize2(wat_ind));
+              cprbot2_mean(iday, ilat,z) = nanmean(p2.cprbot2(wat_ind));
+              cprtop2_mean(iday, ilat,z) = nanmean(p2.cprtop2(wat_ind));
+
+              % cloud fraction gets averaged over ALL obs
+              cfrac_mean(iday, ilat,z) = nanmean(p2.cfrac);
+              cfrac2_mean(iday, ilat,z) = nanmean(p2.cfrac2);
+              cfrac12_mean(iday, ilat,z) = nanmean(p2.cfrac12);
+
+              % Convert robs to Hamming
+              r = box_to_ham(p2.robs1);  % assumes r in freq order!!  Needed
                                   % for lowres
-              
-% $$$               bto = real(rad2bt(f,r));
-% $$$               btc = real(rad2bt(f,rc));
-% $$$               btobs(iday,ilat,:,z) = nanmean(bto,2);
-% $$$               btcal(iday,ilat,:,z) = nanmean(btc,2);
-% $$$               bias(iday,ilat,:,z)  = nanmean(bto-btc,2);
-% $$$               bias_std(iday,ilat,:,z) = nanstd(bto-btc,0,2);
-              robs(iday,ilat,:,z) = nanmean(r,2);
-              rcal(iday,ilat,:,z) = nanmean(rc,2);
-              rcldcal(iday,ilat,:,z) = nanmean(rcld,2);
-              rbias_std(iday, ilat,:) = nanstd(r-rc,0,2);
-              rcbias_std(iday, ilat,:) = nanstd(r-rcld,0,2);
+
+              robs(iday,ilat,z,:) = nanmean(r,2);
+              rcal(iday,ilat,z,:) = nanmean(p2.rclr,2);
+              rcldcal(iday,ilat,z,:) = nanmean(p2.rcld,2);
+              rbias_std(iday, ilat,:) = nanstd(r-p2.rclr,0,2);
+              rcbias_std(iday, ilat,:) = nanstd(r-p2.rcld,0,2);
               
               lat_mean(iday,ilat,z) = nanmean(p2.rlat);
               lon_mean(iday,ilat,z) = nanmean(p2.rlon);
               solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
               rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
-              count(iday,ilat,z) = sum(bincount(1,:))';
+              count(iday,ilat,z,:) = sum(count_infov);
               stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
               iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-              ptemp_mean(iday,ilat,:,z) = nanmean(p.ptemp,2);
-              gas1_mean(iday,ilat,:,z) = nanmean(p.gas_1,2);
-              gas3_mean(iday,ilat,:,z) = nanmean(p.gas_3,2);
+              ptemp_mean(iday,ilat,z,:) = nanmean(p.ptemp,2)';
+              gas1_mean(iday,ilat,z,:) = nanmean(p.gas_1,2)';
+              gas3_mean(iday,ilat,z,:) = nanmean(p.gas_3,2)';
               spres_mean(iday,ilat,z) = nanmean(p.spres);
               nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
               satzen_mean(iday,ilat,z) = nanmean(p.satzen);
-              plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
+              plevs_mean(iday,ilat,z,:) = nanmean(p.plevs,2)';
               mmwater_mean(iday,ilat) = nanmean(binwater);
 % $$$               scanang_mean(iday,ilat,z) = nanmean(p.scanang);
           end  % ifov (z)
@@ -214,7 +325,7 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_cris_lowres_era_rad_kl_%s_random_fs_%s', ...
+outfile = fullfile(statsdir, sprintf('TEST_rtp_cris_lowres_era_rad_kl_%s_random_fs_%s', ...
            int2str(year), sDescriptor));
 eval_str = ['save ' outfile ' robs rcal rcldcal *_std *_mean count '];
 eval(eval_str);

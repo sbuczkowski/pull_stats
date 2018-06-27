@@ -1,16 +1,6 @@
 function pull_stats_airicrad_rand(year, filter, cfg);
-
-%**************************************************
-% need to make this work on daily concat files: look for loop over
-% granules, this will need to be removed. Also break out by fov
-% (add loop and index over p.ifov)
+% PULL_STATS_AIRICRAD_RAND Create stats accumulations from rtp
 %
-% following the 'file in; file out' standard, this routine will
-% read in ONE daily concatenated rtp file and calculate its
-% stats. There will be a driver function above this that will feed
-% rtp file paths to this routine and can provide for slurm indexing
-% and chunking
-%**************************************************
 
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
@@ -100,7 +90,11 @@ iday = 1;
 for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
-   if a.bytes > 100000
+   if a.bytes < 100000
+        fprintf(2, '**>> ERROR: short input rtp file %s\n', dayfiles(giday).name); 
+        continue;
+   end
+       
       [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
       f = h.vchan;  % AIRS proper frequencies
       
@@ -340,7 +334,6 @@ for giday = 1:length(dayfiles)
           plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
       end  % end loop over latitudes
           iday = iday + 1
-   end % if a.bytes > 1000000
 end  % giday
 
 outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_fs_newRTP_%s', ...
