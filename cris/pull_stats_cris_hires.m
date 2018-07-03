@@ -1,4 +1,4 @@
-function pull_stats_cris_hires(year, filter);
+function pull_stats_cris_hires(year, filter, cfg);
 
 %**************************************************
 % need to make this work on daily concat files: look for loop over
@@ -11,7 +11,7 @@ function pull_stats_cris_hires(year, filter);
 % rtp file paths to this routine and can provide for slurm indexing
 % and chunking
 %**************************************************
-
+func_name = 'pull_stats_cris_hires'
 %year = 2014;
 
 addpath /asl/matlib/h4tools
@@ -24,41 +24,119 @@ addpath /home/sergio/MATLABCODE/PLOTTER  %
                                          % equal_area_spherical_bands
 addpath /home/sbuczko1/git/rtp_prod2/cris % cris_lowres_chans
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
-klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
-                'klayers_airs_wetwater'];
+addpath('/home/sbuczko1/git/swutils');  % githash
+
 
 [sID, sTempPath] = genscratchpath();
+
+% check for existence of configuration struct
+bCheckConfig = false;
+if nargin == 3
+    bCheckConfig = true;
+end
+
+% record run start datetime in output stats file for tracking
+trace.githash = githash(func_name);
+trace.RunDate = datetime('now','TimeZone','local','Format', ...
+                         'd-MMM-y HH:mm:ss Z');
+trace.Reason = 'Normal pull_stats runs';
+if bCheckConfig & isfield(cfg, 'Reason')
+    trace.Reason = cfg.Reason;
+end
+
+bRunKlayers = true;
+klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
+                'klayers_airs_wetwater'];
+if bCheckConfig & isfield(cfg, 'klayers') & cfg.klayers == false
+    bRunKlayers = false;
+end
+trace.klayers = bRunKlayers;
+
+trace.droplayers = false;
+if bCheckConfig & isfield(cfg, 'droplayers') & cfg.droplayers == true
+    trace.droplayers = true;
+end
+
+rtpdir = '/asl/rtp/rtp_cris_ccast_hires/';
+if bCheckConfig & isfield(cfg, 'rtpdir')
+    rtpdir = cfg.rtpdir;
+end
+
+statsdir = '/asl/data/stats/cris';
+if bCheckConfig & isfield(cfg, 'statsdir')
+    statsdir = cfg.statsdir;
+end
+
+sSubset = 'clear';
+fprintf(1, '>> Running clear stats\n');
+basedir = fullfile(rtpdir, sSubset, int2str(year));
+dayfiles = dir(fullfile(basedir, sprintf('cris2_ecmwf_csarta_%s_d*.rtp',sSubset)));
+fprintf(1, '>> looking for input concat files in %s\n', basedir);
+fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
+ndays = length(dayfiles);
 
 % Get proper frequencies for these data
 [n1,n2,n3,userLW,userMW,userSW, ichan] = cris_hires_chans();
 f = cris_vchan(2, userLW, userMW, userSW);
-
-sSubset = 'clear';
-fprintf(1, '>> Running clear stats\n');
-
-% $$$ basedir = fullfile('/asl/rtp/rtp_cris_ccast_hires', sSubset, int2str(year));
-basedir = fullfile('/asl/rtp/rtp_cris2_ccast_hires_j1v4_a2v4/', sSubset, ...
-                   int2str(year));
-
-fprintf(1, '>> looking for input concat files in %s\n', basedir);
-
-dayfiles = dir(fullfile(basedir, 'cris2_ecmwf_csarta_clear_d2018*.rtp'));
-% $$$ dayfiles = dir(fullfile(basedir, 'cris_ecmwf_csarta_clear_d2018*.rtp'));
+nchans = length(f);
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
 latbins = equal_area_spherical_bands(nbins);
 nlatbins = length(latbins);
 
+nlevs = 101;  % klayers output
+nfovs = 9;    % FOVs/FOR
+
+% allocate final accumulator arrays
+robs = zeros(ndays, nlatbins, nfovs, nchans);
+rclr = zeros(ndays, nlatbins, nfovs, nchans);
+rcld = zeros(ndays, nlatbins, nfovs, nchans);
+rcldbias_std = zeros(ndays, nlatbins, nfovs, nchans);
+rclrbias_std = zeros(ndays, nlatbins, nfovs, nchans);
+
+lat_mean = zeros(ndays, nlatbins, nfovs);
+lon_mean = zeros(ndays, nlatbins, nfovs);
+solzen_mean = zeros(ndays, nlatbins, nfovs);
+rtime_mean = zeros(ndays, nlatbins, nfovs); 
+count = zeros(ndays, nlatbins, nfovs, nchans);
+tcc_mean = zeros(ndays, nlatbins, nfovs);
+stemp_mean = zeros(ndays, nlatbins, nfovs);
+ptemp_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+gas1_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+gas3_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+spres_mean = zeros(ndays, nlatbins, nfovs);
+nlevs_mean = zeros(ndays, nlatbins, nfovs);
+iudef4_mean = zeros(ndays, nlatbins, nfovs);
+mmwater_mean = zeros(ndays, nlatbins, nfovs);
+satzen_mean = zeros(ndays, nlatbins, nfovs);
+plevs_mean = zeros(ndays, nlatbins, nfovs, nlevs);
+
 iday = 1;
 % for giday = 1:50:length(dayfiles)
 for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
-   if a.bytes > 100000
-      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+   if a.bytes < 100000
+       fprintf(2, '**>> ERROR: short input rtp file %s\n', dayfiles(giday).name); 
+       continue;
+   end
 
-      switch filter
+      [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
+      f = h.vchan;
+
+    % sanity check on p.robs1 as read in. (There have been
+    % instances where this array is short on the spectral
+    % dimension which fails in rad2bt. We trap for this here)
+    obs = size(p.robs1);
+    chans = size(f);
+    if obs(1) ~= chans(1)
+        fprintf(2, ['**>> ERROR: obs/vchan spectral channel ' ...
+                    'mismatch in %s. Bypassing day.\n'], dayfiles(giday).name);
+        continue;
+    end
+
+    switch filter
         case 1
           k = find(p.iudef(4,:) == 1); % descending node (night)
           sDescriptor='desc';
@@ -97,7 +175,7 @@ for giday = 1:length(dayfiles)
       % convert levels to layers for his processing?)
 
       % first remove rcalc field and save it for later restore
-      tmp_rcalc = pp.rclr;
+      tmp_rclr = pp.rclr;
       pp = rmfield(pp, 'rclr');
       
       fprintf(1, '>>> running klayers... ');
@@ -109,8 +187,8 @@ for giday = 1:length(dayfiles)
       unix(klayers_run);
       [h,ha,pp,pa] = rtpread(fn_rtp2);
       % restore rcalc
-      pp.rclr = tmp_rcalc;
-      clear tmp_rcalc;
+      pp.rclr = tmp_rclr;
+      clear tmp_rclr;
       
       fprintf(1, 'Done\n');
 
@@ -134,8 +212,6 @@ for giday = 1:length(dayfiles)
       % initialize counts and look for bad channels (what should
       % the iasi bad channel test look like?)
       [nchans, nobs] = size(pp.robs1);
-      nfovs = 9;
-% $$$       count_all = int8(ones(nchans, nobs, nfovs));
 
       % loop over latitude bins
       for ilat = 1:nlatbins-1
@@ -144,64 +220,47 @@ for giday = 1:length(dayfiles)
                        latbins(ilat+1));
           p = rtp_sub_prof(pp,inbin);
 
-          for z = 1:9  % loop over FOVs to further sub-select
-              ifov = find(p.ifov == z);
-              p2 = rtp_sub_prof(p, ifov);
+          for z = 1:nfovs  % loop over FOVs to further sub-select
+              infov = find(p.ifov == z);
+              p2 = rtp_sub_prof(p, infov);
 
-% $$$               bincount = count_all(:,inbin,z);
-
-              % *** this following line is incorrect ***
-              % should base size off length(ifov), length(p2.rtime), or similar?
-              bincount = int8(ones(nchans, length(inbin)));
+              count_infov = ones(length(infov), nchans);
               binwater = mmwater(inbin);
 
-              % Loop over obs in day
-              % Radiance mean and std
-              r  = p2.robs1;
-              rc = p2.rclr;
-
               % Convert r to rham
-              r = box_to_ham(r);  % assumes r in freq order!!
+              r = box_to_ham(p2.robs1);  % assumes r in freq order!!
 
-              robs(iday,ilat,:,z) = nanmean(r,2);
-              rcal(iday,ilat,:,z) = nanmean(rc,2);
-              rbias_std(iday, ilat,:) = nanstd(r-rc,0,2);
+              robs(iday,ilat,z,:) = nanmean(r,2);
+              rclr(iday,ilat,z,:) = nanmean(p2.rclr,2);
+              rbias_std(iday, ilat,z,:) = nanstd(r-p2.rclr,0,2);
               
               
               lat_mean(iday,ilat,z) = nanmean(p2.rlat);
               lon_mean(iday,ilat,z) = nanmean(p2.rlon);
               solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
               rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
-              count(iday,ilat,z) = sum(bincount(1,:))';
+              count(iday,ilat,z,:) = sum(count_infov);
               stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
               iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-              ptemp_mean(iday,ilat,:,z) = nanmean(p.ptemp,2);
-              gas1_mean(iday,ilat,:,z) = nanmean(p.gas_1,2);
-              gas3_mean(iday,ilat,:,z) = nanmean(p.gas_3,2);
+              ptemp_mean(iday,ilat,z,:) = nanmean(p.ptemp,2);
+              gas1_mean(iday,ilat,z,:) = nanmean(p.gas_1,2);
+              gas3_mean(iday,ilat,z,:) = nanmean(p.gas_3,2);
               spres_mean(iday,ilat,z) = nanmean(p.spres);
               nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
               satzen_mean(iday,ilat,z) = nanmean(p.satzen);
-              plevs_mean(iday,ilat,:,z) = nanmean(p.plevs,2);
+              plevs_mean(iday,ilat,z,:) = nanmean(p.plevs,2);
               mmwater_mean(iday,ilat) = nanmean(binwater);
           end  % ifov (z)
       end  % latbins
       
       iday = iday + 1
-   end % if a.bytes > 1000000
-       % save days to individual files
-% $$$    [SP, FN, EXT] = fileparts(dayfiles(giday).name);
-% $$$    C = strsplit(FN, '_');
-% $$$    sDate = C{5};
 
 end  % giday
 
 % save all days to single yearly file
-eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_j1v4_a2v4_' ...
+eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_ADL_sdr_' ...
             int2str(year) '_' sSubset '_' sDescriptor ...
-            ' robs rcal rbias_std *_mean count '];
-% $$$ eval_str = ['save /asl/data/stats/cris/rtp_cris_hires_' ...
-% $$$             int2str(year) '_' sSubset '_' sDescriptor ...
-% $$$             ' robs rcal rbias_std *_mean count '];
+            ' robs rclr rbias_std *_mean count '];
 
 eval(eval_str);
 

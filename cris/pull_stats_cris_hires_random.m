@@ -120,12 +120,6 @@ for giday = 1:length(dayfiles)
     [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
     f = h.vchan;  % CrIS proper frequencies
 
-    % nadir sub-select (**for 06132018 testing purposes**)
-% $$$     nadir_inds = find(prof.xtrack == 15 | prof.xtrack == 16);
-% $$$     p = rtp_sub_prof(prof, nadir_inds);
-% $$$     fprintf(1, 'Pre/post nadir selection obs count: %d / %d\n', ...
-% $$$             length(prof.robs1), length(p.robs1));
-% $$$     clear prof
     trace.PROCESSING_NOTE = ['Full-swath subset: xtrack ' ...
                         '= ALL'];
     
