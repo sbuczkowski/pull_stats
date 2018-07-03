@@ -260,7 +260,7 @@ end  % giday
 % save all days to single yearly file
 eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_ADL_sdr_' ...
             int2str(year) '_' sSubset '_' sDescriptor ...
-            ' robs rclr rbias_std *_mean count '];
+            ' robs rclr rbias_std *_mean count trace'];
 
 eval(eval_str);
 
