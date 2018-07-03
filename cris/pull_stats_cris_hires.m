@@ -82,8 +82,8 @@ nchans = length(f);
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+latbinedges = equal_area_spherical_bands(nbins);
+nlatbins = length(latbinedges)-1;
 
 nlevs = 101;  % klayers output
 nfovs = 9;    % FOVs/FOR
@@ -214,10 +214,10 @@ for giday = 1:length(dayfiles)
       [nchans, nobs] = size(pp.robs1);
 
       % loop over latitude bins
-      for ilat = 1:nlatbins-1
+      for ilat = 1:nlatbins
           % subset based on latitude bin
-          inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                       latbins(ilat+1));
+          inbin = find(pp.rlat > latbinedges(ilat) & pp.rlat <= ...
+                       latbinedges(ilat+1));
           p = rtp_sub_prof(pp,inbin);
 
           for z = 1:nfovs  % loop over FOVs to further sub-select
@@ -260,7 +260,7 @@ end  % giday
 % save all days to single yearly file
 eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_ADL_sdr_' ...
             int2str(year) '_' sSubset '_' sDescriptor ...
-            ' robs rclr rbias_std *_mean count trace'];
+            ' robs rclr rbias_std *_mean count trace latbinedges'];
 
 eval(eval_str);
 
