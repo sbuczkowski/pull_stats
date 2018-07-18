@@ -140,6 +140,11 @@ for giday = 1:ndays
       if bRunKlayers
           % run klayers on the rtp data to convert levels -> layers
           fprintf(1, '>>> running klayers... ');
+          % rename calc variable.
+          temp_rclr = pp.rclr;
+          pp.rcalc = pp.rclr;
+          pp = rmfield(pp, 'rclr');
+          
           fn_rtp1 = fullfile(sTempPath, ['airs_' sID '_1.rtp']);
           rtpwrite(fn_rtp1, h,ha,pp,pa);
           clear pp;
@@ -151,6 +156,11 @@ for giday = 1:ndays
 
           % Read klayers output into local rtp variables
           [h,ha,pp,pa] = rtpread(fn_rtp2);
+
+          % replace calc variable
+          pp.rclr = temp_rclr;
+          pp = rmfield(pp,'rcalc');
+          clear temp_rclr;
           
           f = h.vchan;  % AIRS proper frequencies
           
@@ -191,6 +201,7 @@ for giday = 1:ndays
 %          kg = setdiff(1:n,k);
 % NaN's for bad channels
          pp.robs1(i,k) = NaN;
+         pp.rclr(i,k) = NaN;
          count_all(i,k) = 0;
       end
 
