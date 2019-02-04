@@ -15,18 +15,17 @@
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=normal
 #SBATCH --account=pi_strow
 #SBATCH -N1
-#SBATCH --mem=18000
+#SBATCH --mem=24000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=07:00:00
+#SBATCH --time=04:00:00
 # low res has data from 2012 to present: 4 years
-#SBATCH --array=4
+#SBATCH --array=0-4
 #SBATCH --requeue
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
-#SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=TIME_LIMIT_50
@@ -39,7 +38,7 @@ MATLAB=/usr/cluster/matlab/current/bin/matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); run_pull_stats_random($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/rtp_prod2/cris/scripts'); addpath('/asl/packages/swutils');cfg=ini2struct('$3');cfg.filter=$1;run_pull_stats_byFOV($2,cfg); exit"
     
 echo "Finished with srun of run_pull_stats"
 
