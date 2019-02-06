@@ -43,14 +43,15 @@ if bCheckConfig & isfield(cfg, 'rtpdir')
     rtpdir = cfg.rtpdir;
 end
 
-statsdir = '/asl/data/stats/airs';
+statsdir = '/asl/data/stats/airs/clear';
 if bCheckConfig & isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
 
 basedir = fullfile(rtpdir, 'clear', int2str(year));
 dayfiles = dir(fullfile(basedir, 'era_airicrad_day*_clear.rtp'));
-ndays = length(dayfiles);
+% $$$ ndays = length(dayfiles);
+ndays = 16;
 fprintf(1,'>>> numfiles = %d\n', ndays);
 
 % calculate latitude bins
@@ -85,11 +86,12 @@ nlevs_mean = zeros(ndays, nlatbins);
 iudef4_mean = zeros(ndays, nlatbins);
 mmwater_mean = zeros(ndays, nlatbins);
 satzen_mean = zeros(ndays, nlatbins);
+satazi_mean = zeros(ndays, nlatbins);
 plevs_mean = zeros(ndays, nlatbins, nlevs);
 
 iday = 1;
-% $$$ for giday = 1:100:length(dayfiles)
-for giday = 1:length(dayfiles)
+for giday = 60:75
+% $$$ for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes < 100000
@@ -259,14 +261,15 @@ for giday = 1:length(dayfiles)
           iudef4_mean(iday,ilat) = nanmean(p.iudef(4,:));
           mmwater_mean(iday,ilat) = nanmean(binwater);
           satzen_mean(iday,ilat) = nanmean(p.satzen);
+          satazi_mean(iday,ilat) = nanmean(p.satazi);          
           plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
       end  % end loop over latitudes
           iday = iday + 1
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_clear_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_16day_%s_clear_%s', ...
            int2str(year), sDescriptor));
-eval_str = ['save ' outfile [' robs rcl* *_mean count* latbinedges ' ...
+eval_str = ['save ' outfile [' robs rcl* *_mean count latbinedges ' ...
                     'trace']];
 fprintf(1,'>> Executing save command: %s\n', eval_str);
 eval(eval_str);
