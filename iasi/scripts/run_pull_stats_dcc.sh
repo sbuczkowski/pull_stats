@@ -15,7 +15,7 @@
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=medium+
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
@@ -28,13 +28,12 @@
 ##SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
-#SBATCH --mail-type=TIME_LIMIT_50
 
 #SBATCH -o /home/sbuczko1/logs/sbatch/pull_stats_iasi_dcc-%A_%a.out
 #SBATCH -e /home/sbuczko1/logs/sbatch/pull_stats_iasi_dcc-%A_%a.err
 
 # matlab options
-MATLAB=/usr/cluster/matlab/current/bin/matlab
+MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 JOBSTEP=0
