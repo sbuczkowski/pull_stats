@@ -17,8 +17,7 @@ addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/ccast/motmsc/utils/
 addpath ~/git/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  %
-                                         % equal_area_spherical_bands
+addpath ../util
 addpath /asl/matlib/aslutil  % mktemp
 
 % collect some system parameters to log
