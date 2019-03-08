@@ -99,6 +99,7 @@ nfovs = 4; % IASI FOV count
 
 % allocate final accumulator arrays
 robs = nan(ndays, nlatbins, nchans, nfovs);
+rcal = nan(ndays, nlatbins, nchans, nfovs);
 
 lat_mean = nan(ndays, nlatbins, nfovs);
 lon_mean = nan(ndays, nlatbins, nfovs);
@@ -301,6 +302,7 @@ for giday = 1:length(dayfiles)
 end  % giday
 
 savefile = sprintf('/asl/data/stats/iasi/dcc/rtp_iasi_era_%d_rad_dcc_%s', year, sDescriptor);
-save(savefile, 'robs','rcal', 'rbias_std', '*_mean','count', 'trace')
+save(savefile, 'robs','rcal', 'rbias_std', '*_mean','count', ...
+     'latbinedges', 'trace', '-v7.3')
 
 fprintf(1, '*** Task end time: %s\n', char(datetime('now')));
