@@ -169,6 +169,10 @@ for giday = 1:length(dayfiles)
         pp = rtp_sub_prof(p, k);
         clear p
 
+        if length(pp.rtime) == 0
+            continue
+        end
+
         if bRunKlayers
             % klayers kills previous sarta in the rtp structures so
             % we need to save values and re-insert after klayers
