@@ -17,7 +17,7 @@ addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/ccast/motmsc/utils/
 addpath ~/git/rtp_prod2/util
-addpath ../util
+addpath ~/git/pull_stats/util
 addpath /asl/matlib/aslutil  % mktemp
 
 % check for existence of configuration struct
