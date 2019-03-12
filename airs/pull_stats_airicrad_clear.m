@@ -50,8 +50,7 @@ end
 
 basedir = fullfile(rtpdir, 'clear', int2str(year));
 dayfiles = dir(fullfile(basedir, 'era_airicrad_day*_clear.rtp'));
-% $$$ ndays = length(dayfiles);
-ndays = 16;
+ndays = length(dayfiles);
 fprintf(1,'>>> numfiles = %d\n', ndays);
 
 % calculate latitude bins
@@ -91,8 +90,7 @@ satazi_mean = nan(ndays, nlatbins);
 plevs_mean = nan(ndays, nlatbins, nlevs);
 
 iday = 1;
-for giday = 60:75
-% $$$ for giday = 1:length(dayfiles)
+for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes < 100000
