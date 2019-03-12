@@ -63,31 +63,32 @@ nchans = 2645;  % AIRICRAD/L1C channel space
 nlevs = 101;  % klayers output
 
 % allocate final accumulator arrays
-robs = zeros(ndays, nlatbins, nchans);
-rclr = zeros(ndays, nlatbins, nchans);
-rclrbias_std = zeros(ndays, nlatbins, nchans);
+robs = nan(ndays, nlatbins, nchans);
+rclr = nan(ndays, nlatbins, nchans);
+rclrbias_std = nan(ndays, nlatbins, nchans);
 
-l1cproc_mean = zeros(ndays, nlatbins, nchans);
-l1csreason_mean = zeros(ndays, nlatbins, nchans);
-dbtun_mean = zeros(ndays, nlatbins);
+l1cproc_mean = nan(ndays, nlatbins, nchans);
+l1csreason_mean = nan(ndays, nlatbins, nchans);
+dbtun_mean = nan(ndays, nlatbins);
 
-lat_mean = zeros(ndays, nlatbins);
-lon_mean = zeros(ndays, nlatbins);
-solzen_mean = zeros(ndays, nlatbins);
-rtime_mean = zeros(ndays, nlatbins); 
-count = zeros(ndays, nlatbins, nchans);
-tcc_mean = zeros(ndays, nlatbins);
-stemp_mean = zeros(ndays, nlatbins);
-ptemp_mean = zeros(ndays, nlatbins, nlevs);
-gas1_mean = zeros(ndays, nlatbins, nlevs);
-gas3_mean = zeros(ndays, nlatbins, nlevs);
-spres_mean = zeros(ndays, nlatbins);
-nlevs_mean = zeros(ndays, nlatbins);
-iudef4_mean = zeros(ndays, nlatbins);
-mmwater_mean = zeros(ndays, nlatbins);
-satzen_mean = zeros(ndays, nlatbins);
-satazi_mean = zeros(ndays, nlatbins);
-plevs_mean = zeros(ndays, nlatbins, nlevs);
+lat_mean = nan(ndays, nlatbins);
+lon_mean = nan(ndays, nlatbins);
+solzen_mean = nan(ndays, nlatbins);
+rtime_mean = nan(ndays, nlatbins); 
+count = nan(ndays, nlatbins, nchans);
+tcc_mean = nan(ndays, nlatbins);
+stemp_mean = nan(ndays, nlatbins);
+wspeed_mean = nan(ndays, nlatbins);
+ptemp_mean = nan(ndays, nlatbins, nlevs);
+gas1_mean = nan(ndays, nlatbins, nlevs);
+gas3_mean = nan(ndays, nlatbins, nlevs);
+spres_mean = nan(ndays, nlatbins);
+nlevs_mean = nan(ndays, nlatbins);
+iudef4_mean = nan(ndays, nlatbins);
+mmwater_mean = nan(ndays, nlatbins);
+satzen_mean = nan(ndays, nlatbins);
+satazi_mean = nan(ndays, nlatbins);
+plevs_mean = nan(ndays, nlatbins, nlevs);
 
 iday = 1;
 for giday = 60:75
@@ -263,13 +264,17 @@ for giday = 60:75
           satzen_mean(iday,ilat) = nanmean(p.satzen);
           satazi_mean(iday,ilat) = nanmean(p.satazi);          
           plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
+          wspeed_mean(iday,ilat) = nanmean(p.wspeed,2);
       end  % end loop over latitudes
           iday = iday + 1
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_16day_%s_clear_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_wind_%s_clear_%s', ...
            int2str(year), sDescriptor));
-eval_str = ['save ' outfile [' robs rcl* *_mean count latbinedges ' ...
-                    'trace']];
+% $$$ eval_str = ['save ' outfile [' robs rcl* *_mean count latbinedges ' ...
+% $$$                     'trace']];
+eval_str = ['save ' outfile ' stemp_mean wspeed_mean'];
+
+
 fprintf(1,'>> Executing save command: %s\n', eval_str);
 eval(eval_str);
