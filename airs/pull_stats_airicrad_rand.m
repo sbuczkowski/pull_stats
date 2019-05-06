@@ -68,6 +68,9 @@ rcldy = zeros(ndays, nlatbins, nchans);
 rcldybias_std = zeros(ndays, nlatbins, nchans);
 rclrbias_std = zeros(ndays, nlatbins, nchans);
 
+l1cproc_mean = zeros(ndays, nlatbins, nchans);
+l1csreason_mean = zeros(ndays, nlatbins, nchans);
+
 lat_mean = zeros(ndays, nlatbins);
 lon_mean = zeros(ndays, nlatbins);
 solzen_mean = zeros(ndays, nlatbins);
@@ -84,6 +87,21 @@ iudef4_mean = zeros(ndays, nlatbins);
 mmwater_mean = zeros(ndays, nlatbins);
 satzen_mean = zeros(ndays, nlatbins);
 plevs_mean = zeros(ndays, nlatbins, nlevs);
+
+cfrac_mean = zeros(ndays, nlatbins);
+cfrac2_mean = zeros(ndays, nlatbins);
+cfrac12_mean = zeros(ndays, nlatbins);
+cngwat_mean = zeros(ndays, nlatbins);
+cngwat2_mean = zeros(ndays, nlatbins);
+cprbot_mean = zeros(ndays, nlatbins);
+cprbot2_mean = zeros(ndays, nlatbins);
+cprtop_mean = zeros(ndays, nlatbins);
+cprtop2_mean = zeros(ndays, nlatbins);
+cpsize_mean = zeros(ndays, nlatbins);
+cpsize2_mean = zeros(ndays, nlatbins);
+ctype_mean = zeros(ndays, nlatbins);
+ctype2_mean = zeros(ndays, nlatbins);
+
 
 iday = 1;
 % $$$ for giday = 1:100:length(dayfiles)
@@ -332,6 +350,24 @@ for giday = 1:length(dayfiles)
           mmwater_mean(iday,ilat) = nanmean(binwater);
           satzen_mean(iday,ilat) = nanmean(p.satzen);
           plevs_mean(iday,ilat,:) = nanmean(p.plevs,2);
+
+          l1cproc_mean(iday,ilat,:) = nanmean(p.l1cproc,2);
+          l1csreason_mean(iday,ilat,:) = nanmean(p.l1csreason,2);
+
+          cfrac_mean(iday,ilat) = nanmean(p.cfrac);
+          cfrac2_mean(iday,ilat) = nanmean(p.cfrac2);
+          cfrac12_mean(iday,ilat) = nanmean(p.cfrac12);
+          cngwat_mean(iday,ilat) = nanmean(p.cngwat);
+          cngwat2_mean(iday,ilat) = nanmean(p.cngwat2);
+          cprbot_mean(iday,ilat) = nanmean(p.cprbot);
+          cprbot2_mean(iday,ilat) = nanmean(p.cprbot2);
+          cprtop_mean(iday,ilat) = nanmean(p.cprtop);
+          cprtop2_mean(iday,ilat) = nanmean(p.cprtop2);
+          cpsize_mean(iday,ilat) = nanmean(p.cpsize);
+          cpsize2_mean(iday,ilat) = nanmean(p.cpsize2);
+          ctype_mean(iday,ilat) = nanmean(p.ctype);
+          ctype2_mean(iday,ilat) = nanmean(p.ctype2);
+
       end  % end loop over latitudes
           iday = iday + 1
 end  % giday
