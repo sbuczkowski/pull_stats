@@ -16,7 +16,7 @@
 # partition = dev/batch
 #SBATCH --partition=batch
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=medium+
 ##SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=24000
@@ -35,7 +35,7 @@
 #SBATCH -e /home/sbuczko1/logs/sbatch/run_airs_pull_stats-%A_%a.err
 
 # matlab options
-MATLAB=/usr/cluster/matlab/current/bin/matlab
+MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_airs_pull_stats"
