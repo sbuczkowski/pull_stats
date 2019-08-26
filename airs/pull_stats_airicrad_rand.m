@@ -162,6 +162,21 @@ for giday = 1:length(dayfiles)
           tmp_rcld = pp.rcld;
           tmp_rclr = pp.rclr;
           tmp_tcc = pp.tcc;
+          tmp_l1cproc = pp.l1cproc;
+          tmp_l1csreason = pp.l1csreason;
+          tmp_cfrac = pp.cfrac;
+          tmp_cfrac2 = pp.cfrac2;
+          tmp_cfrac12 = pp.cfrac12;
+          tmp_cngwat = pp.cngwat;
+          tmp_cngwat2 = pp.cngwat2;
+          tmp_cprbot = pp.cprbot;
+          tmp_cprbot2 = pp.cprbot2;
+          tmp_cprtop = pp.cprtop;
+          tmp_cprtop2 = pp.cprtop2;
+          tmp_cpsize = pp.cpsize;
+          tmp_cpsize2 = pp.cpsize2;
+          tmp_ctype = pp.ctype;
+          tmp_ctype2 = pp.ctype2;
           
           % run klayers on the rtp data to convert levels -> layers
           fprintf(1, '>>> running klayers... ');
@@ -183,7 +198,30 @@ for giday = 1:length(dayfiles)
           pp.rcld = tmp_rcld;
           pp.rclr = tmp_rclr;
           pp.tcc = tmp_tcc;
+          pp.l1cproc = tmp_l1cproc;
+          pp.l1csreason = tmp_l1csreason;
+          pp.cfrac = tmp_cfrac;
+          pp.cfrac2 = tmp_cfrac2;
+          pp.cfrac12 = tmp_cfrac12;
+          pp.cngwat = tmp_cngwat;
+          pp.cngwat2 = tmp_cngwat2;
+          pp.cprbot = tmp_cprbot;
+          pp.cprbot2 = tmp_cprbot2;
+          pp.cprtop = tmp_cprtop;
+          pp.cprtop2 = tmp_cprtop2;
+          pp.cpsize = tmp_cpsize;
+          pp.cpsize2 = tmp_cpsize2;
+          pp.ctype = tmp_ctype;
+          pp.ctype2 = tmp_ctype2;
+
           clear tmp_rcld tmp_rclr tmp_tcc;
+          clear tmp_l1cproc tmp_l1csreason;
+          clear tmp_cfrac tmp_cfrac2 tmp_cfrac12;
+          clear tmp_cngwat tmp_cngwat2;
+          clear tmp_cprbot tmp_cprbot2;
+          clear tmp_cprtop tmp_cprtop2;
+          clear tmp_cpsize tmp_cpsize2;
+          clear tmp_ctype tmp_ctype2;
           
           % get column water
           mmwater = mmwater_rtp(h, pp);
@@ -372,7 +410,7 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_random_%s', ...
+outfile = fullfile(statsdir, 'random', sprintf('rtp_airicrad_era_rad_kl_%s_random_%s', ...
            int2str(year), sDescriptor));
 eval_str = ['save ' outfile [' robs rcl* *_mean count* latbinedges ' ...
                     'trace']];
