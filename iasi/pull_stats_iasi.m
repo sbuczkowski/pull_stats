@@ -87,14 +87,14 @@ for giday = 1:length(dayfiles)
             k = find(p.iudef(4,:) == 1 & p.landfrac == 1); % day, land
             sDescriptor='day_land';
           case 4
-            k = find(p.solzen > 90); % night
+            k = find(p.iudef(4,:) == 0); % night
             sDescriptor='night';
           case 5
             fprintf(1, '>>> Using solzen for day/night selection <<<\n');
-            k = find(p.solzen > 90 & p.landfrac == 0); % night, ocean
+            k = find(p.iudef(4,:) == 0 & p.landfrac == 0); % night, ocean
             sDescriptor='night_ocean';
           case 6
-            k = find(p.solzen > 90 & p.landfrac == 1); % night, land
+            k = find(p.iudef(4,:) == 0 & p.landfrac == 1); % night, land
             sDescriptor='night_land';
         end
 
@@ -104,41 +104,41 @@ for giday = 1:length(dayfiles)
         % convert levels to layers for his processing?)
         % *** Actually, Chris is keeping klayers results in his rtp
         % output files so, I can just use the values already there ***
-% $$$ 
-% $$$         % first remove rcalc field and save it for later restore
-% $$$         rcalc = p.rcalc;
-% $$$         p = rmfield(p, 'rcalc');
-% $$$         
-% $$$         h.ptype = 0; % force ptype to LEVPRO so klayers will run (even if it
-% $$$                      % was run in rtp generation)
-% $$$ 
-% $$$         fprintf(1, '>>> running klayers... ');
-% $$$         fn_rtp1 = fullfile(sTempPath, ['iasi_' sID '_1.rtp']);
-% $$$         outfiles = rtpwrite_12(fn_rtp1, h,ha,p,pa)
-% $$$         % run klayers on first half of spectrum
-% $$$         fprintf(1, '>>> Running klayers on first half of spectrum.\n');
-% $$$         fbase = ['iasi_' sID '_2.rtp'];
-% $$$         fn_rtp2 = fullfile(sTempPath, [fbase '_1']);
-% $$$         klayers_run = [klayers_exec ' fin=' outfiles{1} ' fout=' fn_rtp2 ...
-% $$$                        ' > ' sTempPath '/kout.txt'];
-% $$$         unix(klayers_run);
-% $$$         fprintf(1, '>>>>> Done\n');
-% $$$         % run klayers on second half of spectrum
-% $$$         fprintf(1, '>>> Running klayers on second half of spectrum.\n');
-% $$$         fn_rtp2 = fullfile(sTempPath, [fbase '_2']);
-% $$$         klayers_run = [klayers_exec ' fin=' outfiles{2} ' fout=' fn_rtp2 ...
-% $$$                        ' > ' sTempPath '/kout.txt'];
-% $$$         unix(klayers_run);
-% $$$         fprintf(1, '>>>>> Done\n');
-% $$$         fprintf(1, '>>> Reading in klayers output.\n');
-% $$$         [h,ha,p,pa] = rtpread_12(fullfile(sTempPath, [fbase '_1']));
-% $$$         % restore rcalc
-% $$$         p.rcalc = rcalc;
-% $$$         clear rcalc;
-% $$$
-% $$$         ptype = 1; % reset ptype to LAYPRO since we've re-run klayers
-% $$$         
-% $$$         fprintf(1, 'Done\n');
+
+        % first remove rcalc field and save it for later restore
+        tmp_rclr = p.rclr;
+        p = rmfield(p, 'rclr');
+        
+        h.ptype = 0; % force ptype to LEVPRO so klayers will run (even if it
+                     % was run in rtp generation)
+
+        fprintf(1, '>>> running klayers... ');
+        fn_rtp1 = fullfile(sTempPath, ['iasi_' sID '_1.rtp']);
+        outfiles = rtpwrite_12(fn_rtp1, h,ha,p,pa)
+        % run klayers on first half of spectrum
+        fprintf(1, '>>> Running klayers on first half of spectrum.\n');
+        fbase = ['iasi_' sID '_2.rtp'];
+        fn_rtp2 = fullfile(sTempPath, [fbase '_1']);
+        klayers_run = [klayers_exec ' fin=' outfiles{1} ' fout=' fn_rtp2 ...
+                       ' > ' sTempPath '/kout.txt'];
+        unix(klayers_run);
+        fprintf(1, '>>>>> Done\n');
+        % run klayers on second half of spectrum
+        fprintf(1, '>>> Running klayers on second half of spectrum.\n');
+        fn_rtp2 = fullfile(sTempPath, [fbase '_2']);
+        klayers_run = [klayers_exec ' fin=' outfiles{2} ' fout=' fn_rtp2 ...
+                       ' > ' sTempPath '/kout.txt'];
+        unix(klayers_run);
+        fprintf(1, '>>>>> Done\n');
+        fprintf(1, '>>> Reading in klayers output.\n');
+        [h,ha,p,pa] = rtpread_12(fullfile(sTempPath, [fbase '_1']));
+        % restore rcalc
+        p.rclr = tmp_rclr;
+        clear tmp_rclr;
+
+        ptype = 1; % reset ptype to LAYPRO since we've re-run klayers
+        
+        fprintf(1, 'Done\n');
 
         % initialize counts and look for bad channels (what should
         % the iasi bad channel test look like?)
@@ -167,7 +167,7 @@ for giday = 1:length(dayfiles)
                 % Radiance mean and std
 
                 r  = p2.robs1;
-                rc = p2.rcalc;
+                rc = p2.rclr;
 
                 robs(iday,ilat,:,z) = nanmean(r,2);
                 rcal(iday,ilat,:,z) = nanmean(rc,2);
@@ -195,7 +195,7 @@ for giday = 1:length(dayfiles)
     end % if a.bytes > 1000000
 end  % giday
 
-savefile = sprintf('/home/sbuczko1/WorkingFiles/data/stats/iasi/rtp_iasi_era_%d_rad_clear_%s', year, sDescriptor);
+savefile = sprintf('/asl/data/stats/iasi/rtp_iasi_era_%d_rad_clear_%s', year, sDescriptor);
 save(savefile, 'robs','rcal', 'rbias_std', '*_mean','count', 'trace')
 
 fprintf(1, '*** Task end time: %s\n', char(datetime('now')));
