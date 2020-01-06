@@ -1,6 +1,5 @@
 function run_pull_stats_clear(filter)
-set_process_dirs;
-addpath(genpath(rtp_sw_dir));
+addpath /home/sbuczko1/git/pull_stats_DEV/cris
 
 % grab the slurm array index for this process
 slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));

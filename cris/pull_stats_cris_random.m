@@ -205,7 +205,7 @@ for giday = 1:length(dayfiles)
               % QA/QC checks for bad chans, etc go here and set
               % elements of count_infov to zero
 
-              binwater = mmwater(inbin);        
+              binwater = mmwater(infov);        
 
               % Remove 'clouds' that have only partial defining
               % characteristics (effects 0.2% of obs in test rtp data)
