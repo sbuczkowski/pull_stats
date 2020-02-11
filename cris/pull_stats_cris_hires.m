@@ -25,7 +25,7 @@ addpath /home/sergio/MATLABCODE/PLOTTER  %
 addpath /home/sbuczko1/git/rtp_prod2/cris % cris_lowres_chans
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
 addpath('/home/sbuczko1/git/swutils');  % githash
-
+addpath /home/sbuczko1/git/pull_stats_DEV/cris/util
 
 [sID, sTempPath] = genscratchpath();
 
@@ -36,7 +36,7 @@ if nargin == 3
 end
 
 % record run start datetime in output stats file for tracking
-trace.githash = githash(func_name);
+[status, trace.githash] = githash();
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
 trace.Reason = 'Normal pull_stats runs';
@@ -70,7 +70,7 @@ end
 sSubset = 'clear';
 fprintf(1, '>> Running clear stats\n');
 basedir = fullfile(rtpdir, sSubset, int2str(year));
-dayfiles = dir(fullfile(basedir, sprintf('cris2_ecmwf_csarta_%s_d*.rtp',sSubset)));
+dayfiles = dir(fullfile(basedir, sprintf('cris_era_csarta_%s_d*.rtp',sSubset)));
 fprintf(1, '>> looking for input concat files in %s\n', basedir);
 fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
 ndays = length(dayfiles);
@@ -242,13 +242,13 @@ for giday = 1:length(dayfiles)
               count(iday,ilat,z,:) = sum(count_infov);
               stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
               iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-              ptemp_mean(iday,ilat,z,:) = nanmean(p.ptemp,2);
-              gas1_mean(iday,ilat,z,:) = nanmean(p.gas_1,2);
-              gas3_mean(iday,ilat,z,:) = nanmean(p.gas_3,2);
-              spres_mean(iday,ilat,z) = nanmean(p.spres);
-              nlevs_mean(iday,ilat,z) = nanmean(p.nlevs);
-              satzen_mean(iday,ilat,z) = nanmean(p.satzen);
-              plevs_mean(iday,ilat,z,:) = nanmean(p.plevs,2);
+              ptemp_mean(iday,ilat,z,:) = nanmean(p2.ptemp,2);
+              gas1_mean(iday,ilat,z,:) = nanmean(p2.gas_1,2);
+              gas3_mean(iday,ilat,z,:) = nanmean(p2.gas_3,2);
+              spres_mean(iday,ilat,z) = nanmean(p2.spres);
+              nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
+              satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
+              plevs_mean(iday,ilat,z,:) = nanmean(p2.plevs,2);
               mmwater_mean(iday,ilat) = nanmean(binwater);
           end  % ifov (z)
       end  % latbins
@@ -258,7 +258,7 @@ for giday = 1:length(dayfiles)
 end  % giday
 
 % save all days to single yearly file
-eval_str = ['save /asl/data/stats/cris2/rtp_cris2_hires_ADL_sdr_' ...
+eval_str = ['save /asl/data/stats/cris/rtp_cris_hires_rad_' ...
             int2str(year) '_' sSubset '_' sDescriptor ...
             ' robs rclr rbias_std *_mean count trace latbinedges'];
 

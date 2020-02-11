@@ -111,11 +111,6 @@ for giday = 1:length(dayfiles)
    if a.bytes > 100000
       [h,ha,p,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
 
-      % cris rtps lost valid p.iudef(4,:) somewhere in this last
-      % re-processing
-      p.iudef(4,:) = p.solzen>90.0;  % set p.iudef(4) == 1 for
-                                     % descending/night, 0 for ascending/day
-
       switch filter
         case 1
           k = find(p.iudef(4,:) == 1); % descending node (night)
@@ -187,7 +182,7 @@ for giday = 1:length(dayfiles)
       [nchans, nobs] = size(pp.robs1);
       
       % loop over latitude bins
-      for ilat = 1:nlatbins-1
+      for ilat = 1:nlatbins
           % subset based on latitude bin
           inbin = find(pp.rlat > latbin_edges(ilat) & pp.rlat <= ...
                        latbin_edges(ilat+1));
@@ -234,5 +229,5 @@ for giday = 1:length(dayfiles)
    end % if a.bytes > 1000000
 end  % giday
 eval_str = ['save /asl/data/stats/cris/rtp_cris_lowres_rad_'  int2str(year) ...
-            '_clear' sDescriptor ' robs rclr *_std *_mean count '];
+            '_clear' sDescriptor ' robs rclr *_std *_mean count latbin_edges'];
 eval(eval_str);
