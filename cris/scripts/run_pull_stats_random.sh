@@ -13,9 +13,9 @@
 # sbatch options
 #SBATCH --job-name=RUN_LR_PULL_STATS
 # partition = dev/batch
-#SBATCH --partition=batch
+#SBATCH --partition=high_mem
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=medium+
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
@@ -31,11 +31,11 @@
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=TIME_LIMIT_50
 
-#SBATCH -o /home/sbuczko1/logs/sbatch/run_cris_pull_stats-%A_%a.out
-#SBATCH -e /home/sbuczko1/logs/sbatch/run_cris_pull_stats-%A_%a.err
+#SBATCH -o /home/sbuczko1/LOGS/sbatch/run_cris_pull_stats-%A_%a.out
+#SBATCH -e /home/sbuczko1/LOGS/sbatch/run_cris_pull_stats-%A_%a.err
 
 # matlab options
-MATLAB=/usr/cluster/matlab/current/bin/matlab
+MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"

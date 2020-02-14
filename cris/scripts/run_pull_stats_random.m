@@ -8,4 +8,4 @@ slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 
 year = 2012+slurmindex;
 disp(year)
-pull_stats_cris_random(year,filter);
+pull_stats_cris_hires_random(year,filter);
