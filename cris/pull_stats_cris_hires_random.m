@@ -18,9 +18,8 @@ addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/ccast/motmsc/utils/
 addpath ~/git/rtp_prod2/util
 addpath /asl/rtp_prod/cris/unapod
-addpath /home/sergio/MATLABCODE/PLOTTER  %
-                                         % equal_area_spherical_bands
-addpath /home/sbuczko1/git/rtp_prod2/cris  % cris_lowres_chans
+addpath /home/sbuczko1/git/pull_stats/util % equal_area_spherical_bands
+addpath /home/sbuczko1/git/pull_stats/cris/util % cris_lowres_chans
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
 
 [sID, sTempPath] = genscratchpath();
