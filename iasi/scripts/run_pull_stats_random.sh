@@ -20,7 +20,7 @@
 #SBATCH -N1
 #SBATCH --mem-per-cpu=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=20:00:00
+#SBATCH --time=15:59:00
 #SBATCH --requeue
 #SBATCH --array=0-12
 
