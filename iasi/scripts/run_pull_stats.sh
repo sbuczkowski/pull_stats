@@ -30,8 +30,8 @@
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=TIME_LIMIT_50
 
-#SBATCH -o /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.out
-#SBATCH -e /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.err
+#SBATCH -o /home/sbuczko1/LOGS/sbatch/pull_stats_iasi_clr-%A_%a.out
+#SBATCH -e /home/sbuczko1/LOGS/sbatch/pull_stats_iasi_clr-%A_%a.err
 
 # matlab options
 MATLAB=matlab

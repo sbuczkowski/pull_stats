@@ -29,8 +29,8 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 
-#SBATCH -o /home/sbuczko1/logs/sbatch/pull_stats_iasi_dcc-%A_%a.out
-#SBATCH -e /home/sbuczko1/logs/sbatch/pull_stats_iasi_dcc-%A_%a.err
+#SBATCH -o /home/sbuczko1/LOGS/sbatch/pull_stats_iasi_dcc-%A_%a.out
+#SBATCH -e /home/sbuczko1/LOGS/sbatch/pull_stats_iasi_dcc-%A_%a.err
 
 # matlab options
 MATLAB=matlab
