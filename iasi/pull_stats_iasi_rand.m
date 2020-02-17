@@ -58,6 +58,10 @@ nbins=20; % gives 2N+1 element array of lat bin boundaries
 latbinedges = equal_area_spherical_bands(nbins);
 nlatbins = length(latbinedges)-1;
 
+nchans = 8461;  % IASI channel space
+nlevs = 101; % klayers output
+nfovs = 4; % IASI FOV count
+
 robs = nan(ndays, nlatbins, nchans, nfovs);
 rcal = nan(ndays, nlatbins, nchans, nfovs);
 rbias_std = nan(ndays, nlatbins, nchans, nfovs);
