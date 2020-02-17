@@ -17,7 +17,7 @@ addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/ccast/motmsc/utils/
 addpath ~/git/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  %
+addpath /home/sbuczko1/git/pull_stats/util
                                          % equal_area_spherical_bands
 addpath /asl/matlib/aslutil  % mktemp
 
@@ -54,8 +54,27 @@ fprintf(1, '%s File search complete.\n', char(datetime('now')));
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+latbinedges = equal_area_spherical_bands(nbins);
+nlatbins = length(latbinedges)-1;
+
+robs = nan(ndays, nlatbins, nchans, nfovs);
+rcal = nan(ndays, nlatbins, nchans, nfovs);
+rbias_std = nan(ndays, nlatbins, nchans, nfovs);
+lat_mean = nan(ndays, nlatbins, nfovs);
+lon_mean = nan(ndays, nlatbins, nfovs);
+solzen_mean = nan(ndays, nlatbins, nfovs);
+rtime_mean = nan(ndays, nlatbins, nfovs); 
+count = nan(ndays, nlatbins, nchans, nfovs);
+stemp_mean = nan(ndays, nlatbins, nfovs);
+ptemp_mean = nan(ndays, nlatbins, nlevs, nfovs);
+gas1_mean = nan(ndays, nlatbins, nlevs, nfovs);
+gas3_mean = nan(ndays, nlatbins, nlevs, nfovs);
+spres_mean = nan(ndays, nlatbins, nfovs);
+nlevs_mean = nan(ndays, nlatbins, nfovs);
+iudef4_mean = nan(ndays, nlatbins, nfovs);
+satzen_mean = nan(ndays, nlatbins, nfovs);
+satazi_mean = nan(ndays, nlatbins, nfovs);
+plevs_mean = nan(ndays, nlatbins, nlevs, nfovs);
 
 iday = 1;
 
@@ -129,6 +148,9 @@ for giday = 1:length(dayfiles)
         p.rcalc = rcalc;
         clear rcalc;
         
+        % get column water
+% $$$         mmwater = mmwater_rtp(h, pp);
+
         fprintf(1, 'Done\n');
 
         % initialize counts and look for bad channels (what should
@@ -142,10 +164,10 @@ for giday = 1:length(dayfiles)
         trace.ptype = h.ptype;
         
         % loop over latitude bins
-        for ilat = 1:nlatbins-1
+        for ilat = 1:nlatbins
             % subset based on latitude bin
-            inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                         latbins(ilat+1));
+            inbin = find(pp.rlat > latbinedges(ilat) & pp.rlat <= ...
+                         latbinedges(ilat+1));
             p = rtp_sub_prof(pp,inbin);
 
             for z = 1:4  % loop over FOVs to further sub-select
@@ -166,24 +188,19 @@ for giday = 1:length(dayfiles)
                 lat_mean(iday,ilat,z) = nanmean(p2.rlat);
                 lon_mean(iday,ilat,z) = nanmean(p2.rlon);
                 solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
+                satazi_mean(iday,ilat,z) = nanmean(p2.satazi)
                 rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
                 count(iday,ilat,z) = sum(bincount(1,:))';
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
                 ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
                 gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
-% $$$                 gas2_mean(iday,ilat,:,z) = nanmean(p2.gas_2,2);                
                 gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
-% $$$                 gas4_mean(iday,ilat,:,z) = nanmean(p2.gas_4,2);
-% $$$                 gas5_mean(iday,ilat,:,z) = nanmean(p2.gas_5,2);
-% $$$                 gas6_mean(iday,ilat,:,z) = nanmean(p2.gas_6,2);
-% $$$                 gas9_mean(iday,ilat,:,z) = nanmean(p2.gas_9,2);
-% $$$                 gas12_mean(iday,ilat,:,z) = nanmean(p2.gas_12,2);                    
                 spres_mean(iday,ilat,z) = nanmean(p2.spres);
                 nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
                 satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
                 plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
-% $$$                 scanang_mean(iday,ilat,z) = nanmean(p2.scanang);
+
             end  % ifov (z)
         end  % end loop over ilat
             

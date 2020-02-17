@@ -100,7 +100,7 @@ nfovs = 4; % IASI FOV count
 % allocate final accumulator arrays
 robs = nan(ndays, nlatbins, nchans, nfovs);
 rcal = nan(ndays, nlatbins, nchans, nfovs);
-
+rbias_std = nan(ndays, nlatbins, nchans, nfovs);
 lat_mean = nan(ndays, nlatbins, nfovs);
 lon_mean = nan(ndays, nlatbins, nfovs);
 solzen_mean = nan(ndays, nlatbins, nfovs);
@@ -113,7 +113,7 @@ gas3_mean = nan(ndays, nlatbins, nlevs, nfovs);
 spres_mean = nan(ndays, nlatbins, nfovs);
 nlevs_mean = nan(ndays, nlatbins, nfovs);
 iudef4_mean = nan(ndays, nlatbins, nfovs);
-mmwater_mean = nan(ndays, nlatbins, nfovs);
+% $$$ mmwater_mean = nan(ndays, nlatbins, nfovs);
 satzen_mean = nan(ndays, nlatbins, nfovs);
 satazi_mean = nan(ndays, nlatbins, nfovs);
 plevs_mean = nan(ndays, nlatbins, nlevs, nfovs);
@@ -209,7 +209,7 @@ for giday = 1:length(dayfiles)
             clear tmp_robs1 tmp_rcalc;
             
             % get column water
-            mmwater = mmwater_rtp(h, pp);
+% $$$             mmwater = mmwater_rtp(h, pp);
             
             % Check for obs with layer profiles that go lower than
             % topography. Need to check nlevs and NaN out any layers
@@ -290,13 +290,13 @@ for giday = 1:length(dayfiles)
                 count(iday,ilat,z) = sum(bincount(1,:))';
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
-% $$$                 ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
-% $$$                 gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
-% $$$                 gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
+                ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
+                gas1_mean(iday,ilat,:,z) = nanmean(p2.gas_1,2);
+                gas3_mean(iday,ilat,:,z) = nanmean(p2.gas_3,2);
                 spres_mean(iday,ilat,z) = nanmean(p2.spres);
                 nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
                 satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
-% $$$                 plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
+                plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
 
             end  % ifov (z)
         end  % end loop over ilat

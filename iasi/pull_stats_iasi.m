@@ -17,7 +17,7 @@ addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/ccast/motmsc/utils/
 addpath ~/git/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  %
+addpath /home/sbuczko1/git/pull_stats/util  %
                                          % equal_area_spherical_bands
 addpath /asl/matlib/aslutil  % mktemp
 
@@ -52,12 +52,37 @@ trace.SlurmJobID = slurm_job_id;
 
 basedir = ['/asl/rtp/rtp_iasi1/clear/' int2str(year)];
 dayfiles = dir(fullfile(basedir, 'iasi1_era_d*_clear.rtp_1'));
-fprintf(1,'>>> numfiles = %d\n', length(dayfiles));
+ndays = length(dayfiles);
+fprintf(1,'>>> numfiles = %d\n', ndays);
 
 % calculate latitude bins
 nbins=20; % gives 2N+1 element array of lat bin boundaries
-latbins = equal_area_spherical_bands(nbins);
-nlatbins = length(latbins);
+latbinedges = equal_area_spherical_bands(nbins);
+nlatbins = length(latbinedges)-1;
+
+nchans = 8461;  % IASI channel space
+nlevs = 101; % klayers output
+nfovs = 4; % IASI FOV count
+
+% allocate final accumulator arrays
+robs = nan(ndays, nlatbins, nchans, nfovs);
+rcal = nan(ndays, nlatbins, nchans, nfovs);
+rbias_std = nan(ndays, nlatbins, nchans, nfovs);
+lat_mean = nan(ndays, nlatbins, nfovs);
+lon_mean = nan(ndays, nlatbins, nfovs);
+solzen_mean = nan(ndays, nlatbins, nfovs);
+rtime_mean = nan(ndays, nlatbins, nfovs); 
+count = nan(ndays, nlatbins, nchans, nfovs);
+stemp_mean = nan(ndays, nlatbins, nfovs);
+ptemp_mean = nan(ndays, nlatbins, nlevs, nfovs);
+gas1_mean = nan(ndays, nlatbins, nlevs, nfovs);
+gas3_mean = nan(ndays, nlatbins, nlevs, nfovs);
+spres_mean = nan(ndays, nlatbins, nfovs);
+nlevs_mean = nan(ndays, nlatbins, nfovs);
+iudef4_mean = nan(ndays, nlatbins, nfovs);
+satzen_mean = nan(ndays, nlatbins, nfovs);
+satazi_mean = nan(ndays, nlatbins, nfovs);
+plevs_mean = nan(ndays, nlatbins, nlevs, nfovs);
 
 iday = 1;
 
@@ -151,10 +176,10 @@ for giday = 1:length(dayfiles)
         trace.ptype = ptype;
 
         % loop over latitude bins
-        for ilat = 1:nlatbins-1
+        for ilat = 1:nlatbins
             % subset based on latitude bin
-            inbin = find(pp.rlat > latbins(ilat) & pp.rlat <= ...
-                         latbins(ilat+1));
+            inbin = find(pp.rlat > latbinedges(ilat) & pp.rlat <= ...
+                         latbinedges(ilat+1));
             p = rtp_sub_prof(pp,inbin);
 
             for z = 1:4  % loop over FOVs to further sub-select
@@ -187,6 +212,7 @@ for giday = 1:length(dayfiles)
                 nlevs_mean(iday,ilat,z) = nanmean(p2.nlevs);
                 satzen_mean(iday,ilat,z) = nanmean(p2.satzen);
                 plevs_mean(iday,ilat,:,z) = nanmean(p2.plevs,2);
+                satazi_mean(iday,ilat,:,z) = nanmean(p2.satazi,2);
 
             end  % ifov (z)
         end  % end loop over ilat
