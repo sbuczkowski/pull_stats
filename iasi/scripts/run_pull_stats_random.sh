@@ -13,7 +13,7 @@
 # sbatch options
 #SBATCH --job-name=RUN_IASI_PULL_STATS_RANDOM
 # partition = dev/batch
-#SBATCH --partition=batch
+#SBATCH --partition=high_mem
 # qos = short/normal/medium/long/long_contrib
 #SBATCH --qos=medium+
 #SBATCH --account=pi_strow
@@ -22,7 +22,7 @@
 #SBATCH --cpus-per-task 1
 #SBATCH --time=20:00:00
 #SBATCH --requeue
-#SBATCH --array=9
+#SBATCH --array=0-12
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 ##SBATCH --mail-type=BEGIN

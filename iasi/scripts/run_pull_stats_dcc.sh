@@ -13,7 +13,7 @@
 # sbatch options
 #SBATCH --job-name=RUN_IASI_PULL_STATS_DCC
 # partition = dev/batch
-#SBATCH --partition=batch
+#SBATCH --partition=high_mem
 # qos = short/normal/medium/long/long_contrib
 #SBATCH --qos=short+
 #SBATCH --account=pi_strow
@@ -21,7 +21,7 @@
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task=1
 #SBATCH --time=1:00:00
-##SBATCH --array=0-9
+#SBATCH --array=0-12
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 ##SBATCH --mail-type=BEGIN

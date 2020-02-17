@@ -13,15 +13,15 @@
 # sbatch options
 #SBATCH --job-name=RUN_IASI_PULL_STATS_CLR
 # partition = dev/batch
-#SBATCH --partition=batch
+#SBATCH --partition=high_mem
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium
+#SBATCH --qos=medium+
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task=1
 #SBATCH --time=8:00:00
-#SBATCH --array=9
+#SBATCH --array=0-12
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
 ##SBATCH --mail-type=BEGIN
@@ -34,7 +34,7 @@
 #SBATCH -e /home/sbuczko1/logs/sbatch/pull_stats_iasi_clr-%A_%a.err
 
 # matlab options
-MATLAB=/usr/cluster/matlab/current/bin/matlab
+MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 JOBSTEP=0
