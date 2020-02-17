@@ -119,6 +119,7 @@ for giday = 1:length(dayfiles)
         end
 
         pp = rtp_sub_prof(p, k);
+        clear p
 
         % run klayers on the rtp data (Sergio is asking for this to
         % convert levels to layers for his processing?)
@@ -126,9 +127,10 @@ for giday = 1:length(dayfiles)
         % output files so, I can just use the values already there ***
 
         % first remove rcalc field and save it for later restore
-        rcalc = p.rcalc;
-        p = rmfield(p, 'rcalc');
-        
+        tmp_rclr = pp.rclr;
+        p = rmfield(pp, 'rclr');
+        clear pp 
+
         fprintf(1, '>>> running klayers... ');
         fn_rtp1 = fullfile(sTempPath, ['iasi_' sID '_1.rtp']);
         outfiles = rtpwrite_12(fn_rtp1, h,ha,p,pa)
@@ -150,8 +152,8 @@ for giday = 1:length(dayfiles)
         fprintf(1, '>>> Reading in klayers output.\n');
         [h,ha,p,pa] = rtpread_12(fullfile(sTempPath, [fbase '_1']));
         % restore rcalc
-        p.rcalc = rcalc;
-        clear rcalc;
+        p.rclr = tmp_rclr;
+        clear tmp_rclr;
         
         % get column water
 % $$$         mmwater = mmwater_rtp(h, pp);
@@ -160,7 +162,7 @@ for giday = 1:length(dayfiles)
 
         % initialize counts and look for bad channels (what should
         % the iasi bad channel test look like?)
-        [nchans, nobs] = size(pp.robs1);
+        [nchans, nobs] = size(p.robs1);
         nfovs = 4;
         count_all = int8(ones(nchans, nobs, nfovs));
 
@@ -171,15 +173,15 @@ for giday = 1:length(dayfiles)
         % loop over latitude bins
         for ilat = 1:nlatbins
             % subset based on latitude bin
-            inbin = find(pp.rlat > latbinedges(ilat) & pp.rlat <= ...
+            inbin = find(p.rlat > latbinedges(ilat) & p.rlat <= ...
                          latbinedges(ilat+1));
-            p = rtp_sub_prof(pp,inbin);
+            pp = rtp_sub_prof(p,inbin);
 
             for z = 1:4  % loop over FOVs to further sub-select
-                ifov = find(p.ifov == z);
-                p2 = rtp_sub_prof(p, ifov);
+                ifov = find(pp.ifov == z);
+                p2 = rtp_sub_prof(pp, ifov);
 
-                bincount = count_all(:,inbin,z); 
+                bincount = count_all(:,ifov,z); 
 
                 % Loop over obs in day
                 % Radiance mean and std
@@ -195,7 +197,7 @@ for giday = 1:length(dayfiles)
                 solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
                 satazi_mean(iday,ilat,z) = nanmean(p2.satazi)
                 rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
-                count(iday,ilat,z) = sum(bincount(1,:))';
+                count(iday,ilat,z) = sum(bincount,2));
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
                 ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);

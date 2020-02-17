@@ -124,6 +124,7 @@ for giday = 1:length(dayfiles)
         end
 
         pp = rtp_sub_prof(p, k);
+        clear p
 
         % run klayers on the rtp data (Sergio is asking for this to
         % convert levels to layers for his processing?)
@@ -131,9 +132,10 @@ for giday = 1:length(dayfiles)
         % output files so, I can just use the values already there ***
 
         % first remove rcalc field and save it for later restore
-        tmp_rclr = p.rclr;
-        p = rmfield(p, 'rclr');
-        
+        tmp_rclr = pp.rclr;
+        p = rmfield(pp, 'rclr');
+        clear pp
+
         h.ptype = 0; % force ptype to LEVPRO so klayers will run (even if it
                      % was run in rtp generation)
 
@@ -167,7 +169,7 @@ for giday = 1:length(dayfiles)
 
         % initialize counts and look for bad channels (what should
         % the iasi bad channel test look like?)
-        [nchans, nobs] = size(pp.robs1);
+        [nchans, nobs] = size(p.robs1);
         nfovs = 4;
         count_all = int8(ones(nchans, nobs, nfovs));
 
@@ -178,15 +180,15 @@ for giday = 1:length(dayfiles)
         % loop over latitude bins
         for ilat = 1:nlatbins
             % subset based on latitude bin
-            inbin = find(pp.rlat > latbinedges(ilat) & pp.rlat <= ...
+            inbin = find(p.rlat > latbinedges(ilat) & p.rlat <= ...
                          latbinedges(ilat+1));
-            p = rtp_sub_prof(pp,inbin);
+            pp = rtp_sub_prof(p,inbin);
 
             for z = 1:4  % loop over FOVs to further sub-select
-                ifov = find(p.ifov == z);
-                p2 = rtp_sub_prof(p, ifov);
+                ifov = find(pp.ifov == z);
+                p2 = rtp_sub_prof(pp, ifov);
 
-                bincount = count_all(:,inbin,z); 
+                bincount = count_all(:,ifov,z); 
 
                 % Loop over obs in day
                 % Radiance mean and std
@@ -202,7 +204,7 @@ for giday = 1:length(dayfiles)
                 lon_mean(iday,ilat,z) = nanmean(p2.rlon);
                 solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
                 rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
-                count(iday,ilat,z) = sum(bincount(1,:))';
+                count(iday,ilat,:,z) = sum(bincount,2);
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
                 ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);

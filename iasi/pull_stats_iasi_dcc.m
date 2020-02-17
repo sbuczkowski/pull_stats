@@ -271,7 +271,7 @@ for giday = 1:length(dayfiles)
                 ifov = find(p.ifov == z);
                 p2 = rtp_sub_prof(p, ifov);
 
-                bincount = count_all(:,inbin,z); 
+                bincount = count_all(:,ifov,z); 
 
                 % Loop over obs in day
                 % Radiance mean and std
@@ -287,7 +287,7 @@ for giday = 1:length(dayfiles)
                 lon_mean(iday,ilat,z) = nanmean(p2.rlon);
                 solzen_mean(iday,ilat,z) = nanmean(p2.solzen);
                 rtime_mean(iday,ilat,z)  = nanmean(p2.rtime);
-                count(iday,ilat,z) = sum(bincount(1,:))';
+                count(iday,ilat,z) = sum(bincount,2);
                 stemp_mean(iday,ilat,z) = nanmean(p2.stemp);
                 iudef4_mean(iday,ilat,z) = nanmean(p2.iudef(4,:));
                 ptemp_mean(iday,ilat,:,z) = nanmean(p2.ptemp,2);
