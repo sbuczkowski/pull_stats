@@ -5,7 +5,7 @@ function pull_stats_airicrad_clear(year, filter, cfg);
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  %
+addpath /home/sbuczko1/git/pull_stats/util
                                          % equal_area_spherical_bands
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
 
@@ -267,12 +267,10 @@ for giday = 1:length(dayfiles)
           iday = iday + 1
 end  % giday
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_wind_%s_clear_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_%s_clear_%s', ...
            int2str(year), sDescriptor));
-% $$$ eval_str = ['save ' outfile [' robs rcl* *_mean count latbinedges ' ...
-% $$$                     'trace']];
-eval_str = ['save ' outfile ' stemp_mean wspeed_mean'];
-
+eval_str = ['save ' outfile [' robs rcl* *_mean count latbinedges ' ...
+                    'trace']];
 
 fprintf(1,'>> Executing save command: %s\n', eval_str);
 eval(eval_str);
