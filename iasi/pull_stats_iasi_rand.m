@@ -187,7 +187,7 @@ for giday = 1:length(dayfiles)
                 % Radiance mean and std
 
                 r  = p2.robs1;
-                rc = p2.rcalc;
+                rc = p2.rclr;
 
                 robs(iday,ilat,:,z) = nanmean(r,2);
                 rcal(iday,ilat,:,z) = nanmean(rc,2);

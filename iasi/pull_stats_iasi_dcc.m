@@ -178,7 +178,7 @@ for giday = 1:length(dayfiles)
             % we need to save values and re-insert after klayers
             % finishes
             tmp_robs1 = pp.robs1;
-            tmp_rcalc = pp.rcalc;
+            tmp_rclr = pp.rclr;
 
             % run klayers on the rtp data to convert levels ->
             % layers
@@ -205,8 +205,8 @@ for giday = 1:length(dayfiles)
 
             % restore sarta values
             pp.robs1 = tmp_robs1;
-            pp.rcalc = tmp_rcalc;
-            clear tmp_robs1 tmp_rcalc;
+            pp.rclr = tmp_rclr;
+            clear tmp_robs1 tmp_rclr;
             
             % get column water
 % $$$             mmwater = mmwater_rtp(h, pp);
@@ -245,7 +245,7 @@ for giday = 1:length(dayfiles)
             %          kg = setdiff(1:n,k);
             % NaN's for bad channels
             pp.robs1(i,k) = NaN;
-            pp.rcalc(i,k) = NaN;
+            pp.rclr(i,k) = NaN;
             count_all(i,k) = 0;
         end
 
@@ -277,7 +277,7 @@ for giday = 1:length(dayfiles)
                 % Radiance mean and std
 
                 r  = p2.robs1;
-                rc = p2.rcalc;
+                rc = p2.rclr;
 
                 robs(iday,ilat,:,z) = nanmean(r,2);
                 rcal(iday,ilat,:,z) = nanmean(rc,2);
