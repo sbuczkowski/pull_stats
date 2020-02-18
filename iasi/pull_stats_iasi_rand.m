@@ -48,7 +48,7 @@ trace.Content = 'radiance';
 trace.SlurmJobID = slurm_job_id;
 
 basedir = ['/asl/rtp/rtp_iasi1/random/' int2str(year)];
-dayfiles = dir(fullfile(basedir, 'iasi1_era_d*_random_fs.rtp_1'));
+dayfiles = dir(fullfile(basedir, 'iasi1_era_d*_random.rtp_1'));
 ndays = length(dayfiles);
 fprintf(1,'>>> numfiles = %d\n', ndays);
 fprintf(1, '%s File search complete.\n', char(datetime('now')));
