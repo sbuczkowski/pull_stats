@@ -5,7 +5,7 @@ function pull_stats_airicrad_dcc(year, filter, cfg);
 addpath /asl/matlib/h4tools
 addpath /asl/rtp_prod/airs/utils
 addpath /asl/packages/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  %
+addpath /home/sbuczko1/git/pull_stats/util
                                          % equal_area_spherical_bands
 addpath /asl/matlib/rtptools  % mmwater_rtp.m
 
