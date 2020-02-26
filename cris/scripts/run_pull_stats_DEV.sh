@@ -39,7 +39,7 @@ MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/swutils'); cfg=ini2struct($1); run_pull_stats($2); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats_DEV/cris','~/git/swutils'); cfg=ini2struct($1); run_pull_stats($2); exit"
     
 echo "Finished with srun of run_pull_stats"
 

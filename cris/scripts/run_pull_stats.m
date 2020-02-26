@@ -1,10 +1,19 @@
-function run_pull_stats(filter)
-set_process_dirs;
-addpath(genpath(rtp_sw_dir));
+function run_pull_stats(filter, cfg)
+
+include_addpaths;
 
 % grab the slurm array index for this process
 slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 
-year = 2012+slurmindex;
+switch cfg.instName
+  case 'cris'
+    baseyear = 2012;
+  case 'cris2'
+    baseyear = 2018;
+  otherwise
+    error('Improper instrument name in configuration')
+end
+
+year = baseyear+slurmindex;
 disp(year)
-pull_stats_cris(year,filter);
+pull_stats_cris(year,filter,cfg);
