@@ -20,9 +20,9 @@
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=04:00:00
+#SBATCH --time=05:00:00
 # low res has data from 2012 to present: 4 years
-#SBATCH --array=0-4
+#SBATCH --array=0-7
 #SBATCH --requeue
 
 #SBATCH --mail-user=sbuczko1@umbc.edu
@@ -39,7 +39,7 @@ MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/swutils'); cfg=ini2struct($1); run_pull_stats($2); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/swutils'); cfg=ini2struct('$1'); run_pull_stats($2,cfg); exit"
     
 echo "Finished with srun of run_pull_stats"
 
