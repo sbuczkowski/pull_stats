@@ -115,7 +115,7 @@ l1csreason_mean = nan(ndays, nlatbins, nchans);
 
 if strcmp(descriptor, 'clear')
     % add in clear subset specific variables
-    dbtun = nan(ndays, nlatbins)
+    dbtun = nan(ndays, nlatbins);
 else
 
     % add in random/site/dcc specific variables (basically stuff that
@@ -190,7 +190,12 @@ for giday = 1:ndays
     % save calcs as the re-run of klayers wipes them out
     tmp_rclr = p_filt.rclr;
     tmp_tcc = p_filt.tcc;
-    if ~strcmp(descriptor, 'clear')
+    tmp_l1cproc = p_filt.l1cproc;
+    tmp_l1csreason = p_filt.l1csreason;
+
+    if strcmp(descriptor, 'clear')
+        tmp_dbtun = p_filt.dbtun;
+    else
         tmp_rcld = p_filt.rcld;
     end
 
@@ -209,8 +214,13 @@ for giday = 1:ndays
     % restore rclr
     p_filt.rclr = tmp_rclr;
     p_filt.tcc = tmp_tcc;
-    clear tmp_rclr tmp_tcc
-    if ~strcmp(descriptor, 'clear')
+    p_filt.l1cproc = tmp_l1cproc;
+    p_filt.l1csreason = tmp_l1csreason;
+    clear tmp_rclr tmp_tcc tmp_l1cproc tmp_l1csreason
+    if strcmp(descriptor, 'clear')
+        p_filt.dbtun = tmp_dbtun;
+        clear tmp_dbtun
+    else
         p_filt.rcld = tmp_rcld;
         clear tmp_rcld
     end
