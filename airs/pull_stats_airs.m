@@ -37,7 +37,7 @@ if isfield(cfg, 'model')
     model = cfg.model;
 end
 
-instName = 'airs'; 
+instName = 'airicrad'; 
 
 rtpsrcdir = sprintf('/asl/rtp/rtp_airicrad_v6');
 if isfield(cfg, 'rtpsrcdir')
