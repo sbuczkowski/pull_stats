@@ -247,7 +247,7 @@ for giday = 1:ndays
     [nchans, nobs] = size(p_filt.robs1);
     
     % loop over latitude bins
-    for ilat = 1:nlatbins-1
+    for ilat = 1:nlatbins
         % subset based on latitude bin
         inbin = find(p_filt.rlat > latbin_edges(ilat) & p_filt.rlat <= ...
                      latbin_edges(ilat+1));
