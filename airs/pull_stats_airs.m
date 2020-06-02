@@ -104,6 +104,7 @@ spres_mean = nan(ndays, nlatbins);
 nlevs_mean = nan(ndays, nlatbins);
 iudef4_mean = nan(ndays, nlatbins);
 mmwater_mean = nan(ndays, nlatbins);
+scanang_mean = nan(ndays, nlatbins);
 satzen_mean = nan(ndays, nlatbins);
 satazi_mean = nan(ndays, nlatbins);
 plevs_mean = nan(ndays, nlatbins, nlevs);
