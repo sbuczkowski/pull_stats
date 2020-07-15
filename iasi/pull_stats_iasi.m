@@ -72,7 +72,7 @@ end
 basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
                    int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
-namefilter = sprintf('%s_%s_%s_%s_d*.rtp', instName, ...
+namefilter = sprintf('%s_%s_%s_%s_d*.rtp_1', instName, ...
                      model, rta, descriptor);
 fprintf(1, '>> namefilter: %s\n', namefilter)
 dayfiles = dir(fullfile(basedir, namefilter));
@@ -105,7 +105,6 @@ lon_mean = nan(ndays, nlatbins, nfovs);
 solzen_mean = nan(ndays, nlatbins, nfovs);
 rtime_mean = nan(ndays, nlatbins, nfovs); 
 count = nan(ndays, nlatbins, nfovs, nchans);
-tcc_mean = nan(ndays, nlatbins, nfovs);
 stemp_mean = nan(ndays, nlatbins, nfovs);
 ptemp_mean = nan(ndays, nlatbins, nfovs, nlevs);
 gas1_mean = nan(ndays, nlatbins, nfovs, nlevs);
@@ -117,9 +116,11 @@ mmwater_mean = nan(ndays, nlatbins, nfovs);
 satzen_mean = nan(ndays, nlatbins, nfovs);
 plevs_mean = nan(ndays, nlatbins, nfovs, nlevs);
 
-if ~strcmp(descriptor, 'clear')
+if strcmp(descriptor, 'NOTREADYYET')
     rcld = nan(ndays, nlatbins, nfovs, nchans);
     rcldbias_std = nan(ndays, nlatbins, nfovs, nchans);
+
+    tcc_mean = nan(ndays, nlatbins, nfovs);
 
     count_ice = nan(ndays, nlatbins, nfovs);
     ctype_mean = nan(ndays, nlatbins, nfovs);
@@ -189,8 +190,8 @@ for giday = 1:ndays
       fprintf(1, '>>> running klayers... ');
 
       tmp_rclr = p_filt.rclr;
-      tmp_tcc = p_filt.tcc;
-      if ~strcmp(descriptor, 'clear')
+      if strcmp(descriptor, 'NOTREADYYET')
+          tmp_tcc = p_filt.tcc;
           tmp_rcld = p_filt.rcld;
       end
 
@@ -222,11 +223,11 @@ for giday = 1:ndays
       
       % restore rclr
       p_filt.rclr = tmp_rclr;
-      p_filt.tcc = tmp_tcc;
-      clear tmp_rclr tmp_tcc
-      if ~strcmp(descriptor, 'clear')
+      clear tmp_rclr
+      if strcmp(descriptor, 'NOTREADYYET')
           p_filt.rcld = tmp_rcld;
-          clear tmp_rcld
+          p_filt.tcc = tmp_tcc;
+          clear tmp_rcld tmp_tcc
       end
       
       % get column water
@@ -272,7 +273,7 @@ for giday = 1:ndays
 
               binwater = mmwater(inbin_fov);        
 
-              if ~strcmp(descriptor, 'clear')
+              if strcmp(descriptor, 'NOTREADYYET')
                   % Remove 'clouds' that have only partial defining
                   % characteristics (effects 0.2% of obs in test rtp data)
                   % cfrac=cngwat=0 but cpsize/cprtop/cprbot ~= 0
@@ -360,15 +361,13 @@ for giday = 1:ndays
                   cfrac12_mean(iday, ilat,z) = nanmean(p_infov.cfrac12);
               end
               
-              % Convert robs to Hamming           
-              r = box_to_ham(p_infov.robs1);  % assumes r in freq order!!  Needed
-                                  % for lowres
+              r = p_infov.robs1;  
 
               robs(iday,ilat,z,:) = nanmean(r,2);
               rclr(iday,ilat,z,:) = nanmean(p_infov.rclr,2);
               rclrbias_std(iday, ilat,z,:) = nanstd(r-p_infov.rclr,0,2);
 
-              if ~strcmp(descriptor, 'clear')
+              if strcmp(descriptor, 'NOTREADYYET')
                   rcld(iday,ilat,z,:) = nanmean(p_infov.rcld,2);
                   rcldbias_std(iday, ilat,z,:) = nanstd(r-p_infov.rcld,0, ...
                                                       2);
@@ -396,8 +395,8 @@ for giday = 1:ndays
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_%s_%s_%s_rad_kl_%s_%4d_%s', ...
-           instName, fscale, model, descriptor, year, ...
+outfile = fullfile(statsdir, sprintf('rtp_%s_%s_rad_kl_%s_%4d_%s', ...
+           instName, model, descriptor, year, ...
                                      sDescriptor));
 
 eval_str = sprintf('save %s robs rclr *_std *_mean count ', ...

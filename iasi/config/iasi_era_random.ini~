@@ -1,0 +1,6 @@
+model = era
+instname = cris
+fscale = lowres
+descriptor = random
+nbins = 20
+reason = **TEST** Lowres, ERA, random stats for cris/npp

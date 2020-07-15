@@ -3,13 +3,6 @@ function pull_stats_airicrad_clear_scanangle_latbin(year, filter, ...
 % PULL_STATS_AIRICRAD_RAND Create stats accumulations from rtp
 %
 
-addpath /asl/matlib/h4tools
-addpath /asl/rtp_prod/airs/utils
-addpath /asl/packages/rtp_prod2/util
-addpath /home/sergio/MATLABCODE/PLOTTER  %
-                                         % equal_area_spherical_bands
-addpath /asl/matlib/rtptools  % mmwater_rtp.m
-
 [sID, sTempPath] = genscratchpath();
 
 % check for existence of configuration struct
@@ -52,7 +45,7 @@ end
 basedir = fullfile(rtpdir, 'clear', int2str(year));
 dayfiles = dir(fullfile(basedir, 'era_airicrad_day*_clear.rtp'));
 ndays = length(dayfiles);
-% $$$ ndays = 32;
+ndays = 32;
 fprintf(1,'>>> numfiles = %d\n', ndays);
 
 % calculate latitude bins
@@ -94,8 +87,8 @@ satazi_mean = zeros(nlatbins, nfovs);
 plevs_mean = zeros(nlatbins, nfovs, nlevs);
 
 iday = 1;
-% $$$ for giday = 60:91
-for giday = 1:length(dayfiles)
+for giday = 60:91
+% $$$ for giday = 1:length(dayfiles)
    fprintf(1, '>>> year = %d  :: giday = %d\n', year, giday);
    a = dir(fullfile(basedir,dayfiles(giday).name));
    if a.bytes < 100000
@@ -119,25 +112,25 @@ for giday = 1:length(dayfiles)
             
       switch filter
         case 1
-          k = find(p.iudef(4,:) == 1); % descending node (night)
+          k = find(p.iudef(4,:) == 68); % descending node (night)
           sDescriptor='desc';
         case 2
-          k = find(p.iudef(4,:) == 1 & p.landfrac == 0); % descending
+          k = find(p.iudef(4,:) == 68 & p.landfrac == 0); % descending
                                                      % node (night) ocean
           sDescriptor='desc_ocean';
         case 3
-          k = find(p.iudef(4,:) == 1 & p.landfrac == 1); % descending node
+          k = find(p.iudef(4,:) == 68 & p.landfrac == 1); % descending node
                                                         % (night), land
           sDescriptor='desc_land';
         case 4
-          k = find(p.iudef(4,:) == 0); % ascending node (day)
+          k = find(p.iudef(4,:) == 65); % ascending node (day)
           sDescriptor='asc';
         case 5
-          k = find(p.iudef(4,:) == 0 & p.landfrac == 0); % ascending node
+          k = find(p.iudef(4,:) == 65 & p.landfrac == 0); % ascending node
                                                          % (day), ocean
           sDescriptor='asc_ocean';
         case 6
-          k = find(p.iudef(4,:) == 0 & p.landfrac == 1); % ascending node
+          k = find(p.iudef(4,:) == 65 & p.landfrac == 1); % ascending node
                                                         % (day), land
           sDescriptor='asc_land';
       end
@@ -293,7 +286,7 @@ end
           plevs_mean(1,ifov,:) = nanmean(pp.plevs(:,infov),2);
       end  % end loop over ifov
 
-outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_1year_scanangle_lbin_%d_%s_clear_%s', ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_era_rad_kl_32day_scanangle_lbin_%d_%s_clear_%s', ...
            ilat, int2str(year), sDescriptor));
 eval_str = ['save ' outfile [' robs rcl* *_mean count latbinedges ' ...
                     'trace']];
