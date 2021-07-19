@@ -3,6 +3,7 @@
 REPOBASEPATH = '/home/sbuczko1/git/';
 % $$$ REPOBASEPATH = '/asl/packages/';
 
+addpath ~/git/pull_stats_DEV/util
 % rtp_prod2_DEV
 addpath(sprintf('%s/rtp_prod2_DEV/util', REPOBASEPATH));
 addpath(sprintf('%s/rtp_prod2_DEV/grib', REPOBASEPATH));

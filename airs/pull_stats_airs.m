@@ -59,6 +59,11 @@ if isfield(cfg, 'rta')
     rta = cfg.rta;
 end
 
+bIncludeCalcs = true;
+if isfield(cfg, 'includecalcs') & cfg.includecalcs == 0
+    bIncludeCalcs = false;
+end
+
 basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
                    int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
@@ -86,8 +91,11 @@ nlevs = 101;  % klayers output
 
 % allocate final accumulator arrays for common variables
 robs = nan(ndays, nlatbins, nchans);
-rclr = nan(ndays, nlatbins, nchans);
-rclrbias_std = nan(ndays, nlatbins, nchans);
+
+if bIncludeCalcs
+    rclr = nan(ndays, nlatbins, nchans);
+    rclrbias_std = nan(ndays, nlatbins, nchans);
+end
 
 lat_mean = nan(ndays, nlatbins);
 lon_mean = nan(ndays, nlatbins);
@@ -121,8 +129,10 @@ else
 
     % add in random/site/dcc specific variables (basically stuff that
     % tags along with sarta_cloudy runs)
-    rcld = nan(ndays, nlatbins, nchans);
-    rcldbias_std = nan(ndays, nlatbins, nchans);
+    if bIncludeCalcs
+        rcld = nan(ndays, nlatbins, nchans);
+        rcldbias_std = nan(ndays, nlatbins, nchans);
+    end
 
     count_ice = nan(ndays, nlatbins);
     ctype_mean = nan(ndays, nlatbins);
@@ -189,15 +199,19 @@ for giday = 1:ndays
     clear p_rtp
     % run klayers on the rtp data to convert levels -> layers
     % save calcs as the re-run of klayers wipes them out
-    tmp_rclr = p_filt.rclr;
+    if bIncludeCalcs
+        tmp_rclr = p_filt.rclr;
+        if ~strcmp(descriptor, 'clear')
+            tmp_rcld = p_filt.rcld;
+        end
+    end
+
     tmp_tcc = p_filt.tcc;
     tmp_l1cproc = p_filt.l1cproc;
     tmp_l1csreason = p_filt.l1csreason;
 
     if strcmp(descriptor, 'clear')
         tmp_dbtun = p_filt.dbtun;
-    else
-        tmp_rcld = p_filt.rcld;
     end
 
     fprintf(1, '>>> running klayers... ');
@@ -213,17 +227,21 @@ for giday = 1:ndays
     % Read klayers output into local rtp variables
     [h,ha,p_filt,pa] = rtpread(fn_rtp2);
     % restore rclr
-    p_filt.rclr = tmp_rclr;
+    if bIncludeCalcs
+        p_filt.rclr = tmp_rclr;
+        clear tmp_rclr
+        if ~strcmp(descriptor, 'clear')
+            p_filt.rcld = tmp_rcld;
+            clear tmp_rcld
+        end
+    end
     p_filt.tcc = tmp_tcc;
     p_filt.l1cproc = tmp_l1cproc;
     p_filt.l1csreason = tmp_l1csreason;
-    clear tmp_rclr tmp_tcc tmp_l1cproc tmp_l1csreason
+    clear tmp_tcc tmp_l1cproc tmp_l1csreason
     if strcmp(descriptor, 'clear')
         p_filt.dbtun = tmp_dbtun;
         clear tmp_dbtun
-    else
-        p_filt.rcld = tmp_rcld;
-        clear tmp_rcld
     end
     
     % get column water
@@ -353,16 +371,19 @@ for giday = 1:ndays
         
         r = p_inbin.robs1;
         robs(iday,ilat,:) = nanmean(r,2);
-        rclr(iday,ilat,:) = nanmean(p_inbin.rclr,2);
-        rclrbias_std(iday, ilat,:) = nanstd(r-p_inbin.rclr,0,2);
+        if bIncludeCalcs
+            rclr(iday,ilat,:) = nanmean(p_inbin.rclr,2);
+            rclrbias_std(iday, ilat,:) = nanstd(r-p_inbin.rclr,0, ...
+                                                2);
+            if ~strcmp(descriptor, 'clear')
+                rcld(iday,ilat,:) = nanmean(p_inbin.rcld,2);
+                rcldbias_std(iday, ilat,:) = nanstd(r-p_inbin.rcld,0, ...
+                                                    2);
+            end
+        end
 
         if strcmp(descriptor, 'clear')
             dbtun_mean(iday,ilat) = nanmean(p_inbin.dbtun);
-        
-        else
-            rcld(iday,ilat,:) = nanmean(p_inbin.rcld,2);
-            rcldbias_std(iday, ilat,:) = nanstd(r-p_inbin.rcld,0, ...
-                                                2);
         end
         
         lat_mean(iday,ilat) = nanmean(p_inbin.rlat);
@@ -393,12 +414,18 @@ outfile = fullfile(statsdir, sprintf('rtp_%s_%s_rad_kl_%4d_%s_%s', ...
                                      instName, model, year, descriptor, ...
                                      sDescriptor));
 
-eval_str = sprintf('save %s robs rclr *_std *_mean count trace -v7.3', ...
+if bIncludeCalcs
+    eval_str = sprintf('save %s robs rclr *_std *_mean count trace -v7.3', ...
                    outfile);
-if ~strcmp(descriptor, 'clear')
-    eval_str = sprintf('save %s robs rclr rcld *_std *_mean count trace -v7.3', ...
-                       outfile);
+    if ~strcmp(descriptor, 'clear')
+        eval_str = sprintf('save %s robs rclr rcld *_std *_mean count trace -v7.3', ...
+                           outfile);
+    end
+else
+    eval_str = sprintf('save %s robs *_mean count trace -v7.3', ...
+                   outfile);
 end
+
 fprintf(1, '>> Executing save command: \n\t%s\n', eval_str)
 eval(eval_str);
 

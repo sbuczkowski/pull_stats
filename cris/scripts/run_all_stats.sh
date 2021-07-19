@@ -5,7 +5,7 @@
 # currently this makes sense for random subset only
 
 for i in {1..6}; do
-    sbatch run_pull_stats.sh $i
+    sbatch run_pull_stats.sh $1 $i
 done
 
 

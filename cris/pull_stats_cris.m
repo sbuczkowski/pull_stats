@@ -34,16 +34,9 @@ if isfield(cfg, 'model')
     model = cfg.model;
 end
 
-instName = 'cris';   % default is NPP
-if isfield(cfg, 'instname') & ~strcmp(cfg.instname, 'cris')
-    switch cfg.instname
-      case 'cris2'
-        instName = 'cris2';  % j01
-      case 'cris3'
-        instName = 'cris3';  % jpss
-      otherwise
-        error('Invalid instrument name')
-    end
+instname = 'npp';   % default is NPP
+if isfield(cfg, 'instname') 
+    instname = cfg.instname;
 end
 
 bHiRes = false;
@@ -53,20 +46,25 @@ if isfield(cfg, 'fscale') & strcmp(cfg.fscale, 'hires')
     fscale = 'hires';
 end
 
-rtpsrcdir = sprintf('/asl/rtp/rtp_%s_ccast_%s', instName, fscale);
+rtpsrcdir = sprintf('/asl/rtp/cris/%s_ccast_%s', instname, fscale);
 if isfield(cfg, 'rtpsrcdir')
     rtpsrcdir = cfg.rtpsrcdir;
 end
 
-descriptor = 'random'
+descriptor = 'random';
 if isfield(cfg, 'descriptor')
     descriptor = cfg.descriptor;
 end
+needscloudfields = (~strcmp(descriptor, 'clear') & ~strcmp(descriptor, ...
+                                                  'dcc'));
 
-statsdir = sprintf('/asl/data/stats/%s/%s', instName,descriptor);
+statsdir = sprintf('/asl/stats/cris/%s/%s', instname, descriptor);
 if isfield(cfg, 'statsdir')
     statsdir = cfg.statsdir;
 end
+        if exist(statsdir) == 0
+            mkdir(statsdir);
+        end
 
 rta = 'csarta';
 if isfield(cfg, 'rta')
@@ -76,8 +74,8 @@ end
 basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
                    int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
-namefilter = sprintf('%s_%s_%s_%s_d*.rtp', instName, ...
-                     model, rta, descriptor);
+namefilter = 'cris_sdr_ecmwf_csarta_clear_d20190301.rtp'; 
+% $$$ namefilter = sprintf('%s_rtp_d*_%s.rtp', model, descriptor);
 fprintf(1, '>> namefilter: %s\n', namefilter)
 dayfiles = dir(fullfile(basedir, namefilter));
                                          
@@ -115,7 +113,7 @@ lon_mean = nan(ndays, nlatbins, nfovs);
 solzen_mean = nan(ndays, nlatbins, nfovs);
 rtime_mean = nan(ndays, nlatbins, nfovs); 
 count = nan(ndays, nlatbins, nfovs, nchans);
-tcc_mean = nan(ndays, nlatbins, nfovs);
+% $$$ tcc_mean = nan(ndays, nlatbins, nfovs);
 stemp_mean = nan(ndays, nlatbins, nfovs);
 ptemp_mean = nan(ndays, nlatbins, nfovs, nlevs);
 gas1_mean = nan(ndays, nlatbins, nfovs, nlevs);
@@ -127,7 +125,7 @@ mmwater_mean = nan(ndays, nlatbins, nfovs);
 satzen_mean = nan(ndays, nlatbins, nfovs);
 plevs_mean = nan(ndays, nlatbins, nfovs, nlevs);
 
-if ~strcmp(descriptor, 'clear')
+if needscloudfields
     rcld = nan(ndays, nlatbins, nfovs, nchans);
     rcldbias_std = nan(ndays, nlatbins, nfovs, nchans);
 
@@ -194,10 +192,19 @@ for giday = 1:ndays
       % run klayers on the rtp data to convert levels -> layers
       % save calcs as the re-run of klayers wipes them out
       tmp_rclr = p_filt.rclr;
-      tmp_tcc = p_filt.tcc;
-      if ~strcmp(descriptor, 'clear')
+% $$$       tmp_tcc = p_filt.tcc;
+      if needscloudfields
           tmp_rcld = p_filt.rcld;
       end
+
+      % rtps are in levels but h.ptype is set to 1 for layers. need
+      % to reset this to 0 before running klayers (because we have
+      % started trying to preserve attributes from the
+      % klayers/sarta chain. ultimately, this needs to be fixed in
+      % rtp generation)
+% $$$       load('/home/sbuczko1/Work/scratch/cris_header')
+% $$$       h = hr;
+% $$$       clear hr
 
       fprintf(1, '>>> running klayers... ');
       fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
@@ -205,7 +212,7 @@ for giday = 1:ndays
       clear p_filt;
       fn_rtp2 = fullfile(sTempPath, ['cris_' sID '_2.rtp']);
       klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
-                     ' > ' sTempPath '/kout.txt'];
+                     ' > /home/sbuczko1/Work/scratch/kout.txt'];
       unix(klayers_run);
       fprintf(1, 'Done\n');
 
@@ -213,9 +220,9 @@ for giday = 1:ndays
       [h,ha,p_filt,pa] = rtpread(fn_rtp2);
       % restore rclr
       p_filt.rclr = tmp_rclr;
-      p_filt.tcc = tmp_tcc;
-      clear tmp_rclr tmp_tcc
-      if ~strcmp(descriptor, 'clear')
+% $$$       p_filt.tcc = tmp_tcc;
+      clear tmp_rclr 
+      if needscloudfields
           p_filt.rcld = tmp_rcld;
           clear tmp_rcld
       end
@@ -252,7 +259,7 @@ for giday = 1:ndays
           
           for z = 1:9  % loop over FOVs to further sub-select
               infov = find(p_filt.ifov == z);
-              inbin_fov = intersect(inbin, infov)
+              inbin_fov = intersect(inbin, infov);
               p_infov = rtp_sub_prof(p_filt, inbin_fov);
 
               daylatfov_str = sprintf('%s, z = %d', daylat_str, z);
@@ -263,7 +270,7 @@ for giday = 1:ndays
 
               binwater = mmwater(inbin_fov);        
 
-              if ~strcmp(descriptor, 'clear')
+              if needscloudfields
                   % Remove 'clouds' that have only partial defining
                   % characteristics (effects 0.2% of obs in test rtp data)
                   % cfrac=cngwat=0 but cpsize/cprtop/cprbot ~= 0
@@ -359,7 +366,7 @@ for giday = 1:ndays
               rclr(iday,ilat,z,:) = nanmean(p_infov.rclr,2);
               rclrbias_std(iday, ilat,z,:) = nanstd(r-p_infov.rclr,0,2);
 
-              if ~strcmp(descriptor, 'clear')
+              if needscloudfields
                   rcld(iday,ilat,z,:) = nanmean(p_infov.rcld,2);
                   rcldbias_std(iday, ilat,z,:) = nanstd(r-p_infov.rcld,0, ...
                                                       2);
@@ -387,13 +394,13 @@ for giday = 1:ndays
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_%s_%s_%s_rad_kl_%s_%4d_%s', ...
-           instName, fscale, model, year, descriptor, ...
+outfile = fullfile(statsdir, sprintf('%s_%s_%s_%s_%4d_%s', ...
+           instname, fscale, model, descriptor, year, ...
                                      sDescriptor));
 
 eval_str = sprintf('save %s robs rclr *_std *_mean count -v7.3', ...
                    outfile);
-if ~strcmp(descriptor, 'clear')
+if needscloudfields
     eval_str = sprintf('save %s robs rclr rcld *_std *_mean count -v7.3', ...
                        outfile);
 end

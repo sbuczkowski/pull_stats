@@ -15,21 +15,15 @@
 # partition = dev/batch
 #SBATCH --partition=high_mem
 # qos = short/normal/medium/long/long_contrib
-#SBATCH --qos=medium+
+#SBATCH --qos=normal+
 #SBATCH --account=pi_strow
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=05:00:00
+#SBATCH --time=01:30:00
 # low res has data from 2012 to present: 4 years
 #SBATCH --array=0-7
 #SBATCH --requeue
-
-#SBATCH --mail-user=sbuczko1@umbc.edu
-#SBATCH --mail-type=END
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-type=REQUEUE
-#SBATCH --mail-type=TIME_LIMIT_50
 
 #SBATCH -o /home/sbuczko1/LOGS/sbatch/run_cris_pull_stats-%A_%a.out
 #SBATCH -e /home/sbuczko1/LOGS/sbatch/run_cris_pull_stats-%A_%a.err
@@ -39,7 +33,7 @@ MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/cris','~/git/swutils'); cfg=ini2struct('$1'); run_pull_stats($2,cfg); exit"
+$MATLAB $MATOPT -r "include_addpaths_DEV; cfg=ini2struct('$1'); run_pull_stats($2,cfg); exit"
     
 echo "Finished with srun of run_pull_stats"
 

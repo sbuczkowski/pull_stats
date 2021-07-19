@@ -6,9 +6,9 @@ include_addpaths;
 slurmindex = str2num(getenv('SLURM_ARRAY_TASK_ID'));
 
 switch cfg.instname
-  case 'cris'
+  case 'npp'
     baseyear = 2012;
-  case 'cris2'
+  case 'j01'
     baseyear = 2018;
   otherwise
     error('Improper instrument name in configuration')

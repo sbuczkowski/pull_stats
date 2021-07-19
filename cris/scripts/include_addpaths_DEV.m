@@ -1,3 +1,5 @@
+% software utils
+addpath /home/sbuczko1/git/swutils
 % pull_stats
 addpath /home/sbuczko1/git/pull_stats_DEV/cris
 
