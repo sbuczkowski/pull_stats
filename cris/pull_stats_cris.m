@@ -74,8 +74,9 @@ end
 basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
                    int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
-namefilter = 'cris_sdr_ecmwf_csarta_clear_d20190301.rtp'; 
+% $$$ namefilter = 'cris_sdr_ecmwf_csarta_clear_d20190301.rtp'; 
 % $$$ namefilter = sprintf('%s_rtp_d*_%s.rtp', model, descriptor);
+namefilter = cfg.namefilter;
 fprintf(1, '>> namefilter: %s\n', namefilter)
 dayfiles = dir(fullfile(basedir, namefilter));
                                          
