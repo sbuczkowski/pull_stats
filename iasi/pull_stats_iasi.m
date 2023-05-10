@@ -1,15 +1,6 @@
 function pull_stats_iasi(year, filter, cfg);
 sFunction='pull_stats_iasi';
 
-% record run start datetime in output stats file for tracking
-trace.RunDate = datetime('now','TimeZone','local','Format', ...
-                         'd-MMM-y HH:mm:ss Z');
-fprintf(1, '> Starting %s processing: %s\n', sFunction, datestr(trace.RunDate))
-
-trace.Reason = 'Normal pull_stats runs';
-if isfield(cfg, 'reason')
-    trace.Reason = cfg.reason;
-end
 
 [sID, sTempPath] = genscratchpath();
 if isfield(cfg, 'stemppath')
@@ -18,24 +9,25 @@ if isfield(cfg, 'stemppath')
 end
 fprintf(1, '>> TempPath: %s\n', sTempPath)
 
-bRunKlayers = true;
-klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
-                'klayers_airs_wetwater'];
-if isfield(cfg, 'klayers') & cfg.klayers == false
-    bRunKlayers = false;
-end
-trace.klayers = bRunKlayers;
-trace.klayers_exec = klayers_exec;
+%% Program config setup and trace capture
+% record run start datetime in output stats file for tracking
+trace.RunDate = datetime('now','TimeZone','local','Format', ...
+                         'd-MMM-y HH:mm:ss Z');
+fprintf(1, '> Starting %s processing: %s\n', sFunction, datestr(trace.RunDate))
 
+% need to add configuration validation. For now, it is assumed
+% operator knows what the hell they are doing *DANGEROUS*
+trace.Reason = cfg.reason;
+trace.klayers = true;
+trace.klayers_exec = cfg.klayers_exec;
 trace.droplayers = false;
-if isfield(cfg, 'droplayers') & cfg.droplayers == true
-    trace.droplayers = true;
-end
 
-model = 'era';
-if isfield(cfg, 'model')
-    model = cfg.model;
-end
+% carrying model information into stats may be falling out of favor
+% as we have a mix of ERA and ECMWF that is not going to disappear
+% and that does not align with a year boundary (break is Sept,
+% 2019)
+model = cfg.model;
+
 
 instName = 'iasi1';   % default (Metop-A M02)
 if isfield(cfg, 'instname') & ~strcmp(cfg.instname, 'iasi1')
@@ -49,31 +41,12 @@ if isfield(cfg, 'instname') & ~strcmp(cfg.instname, 'iasi1')
     end
 end
 
-rtpsrcdir = sprintf('/asl/rtp/rtp_%s', instName);
-if isfield(cfg, 'rtpsrcdir')
-    rtpsrcdir = cfg.rtpsrcdir;
-end
+rtpsrcdir = cfg.rtpsrcdir;
+descriptor = cfg.descriptor;
+statsdir = cfg.statsdir;
 
-descriptor = 'random'
-if isfield(cfg, 'descriptor')
-    descriptor = cfg.descriptor;
-end
-
-statsdir = sprintf('/asl/data/stats/%s/%s', instName,descriptor);
-if isfield(cfg, 'statsdir')
-    statsdir = cfg.statsdir;
-end
-
-rta = 'sarta';
-if isfield(cfg, 'rta')
-    rta = cfg.rta;
-end
-
-basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
-                   int2str(year));
+basedir = fullfile(rtpsrcdir, int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
-% $$$ namefilter = sprintf('%s_%s_%s_%s_d*.rtp_1', instName, ...
-% $$$                      model, rta, descriptor);
 namefilter = sprintf('%s_%s_d*_%s.rtp_1', instName, ...
                      model, descriptor);
 fprintf(1, '>> namefilter: %s\n', namefilter)
@@ -207,7 +180,7 @@ for giday = 1:ndays
       fprintf(1, '>>> Running klayers on first half of spectrum.\n');
       fbase = ['iasi_' sID '_2.rtp'];
       fn_rtp2 = fullfile(sTempPath, [fbase '_1']);
-      klayers_run = [klayers_exec ' fin=' outfiles{1} ' fout=' fn_rtp2 ...
+      klayers_run = [cfg.klayers_exec ' fin=' outfiles{1} ' fout=' fn_rtp2 ...
                      ' > ' sTempPath '/kout.txt'];
       unix(klayers_run);
       fprintf(1, '>>> Done\n');
@@ -215,7 +188,7 @@ for giday = 1:ndays
       % run klayers on second half of spectrum
       fprintf(1, '>>> Running klayers on second half of spectrum.\n');
       fn_rtp2 = fullfile(sTempPath, [fbase '_2']);
-      klayers_run = [klayers_exec ' fin=' outfiles{2} ' fout=' fn_rtp2 ...
+      klayers_run = [cfg.klayers_exec ' fin=' outfiles{2} ' fout=' fn_rtp2 ...
                      ' > ' sTempPath '/kout.txt'];
       unix(klayers_run);
       fprintf(1, '>>> Done\n');
@@ -397,13 +370,20 @@ for giday = 1:ndays
           iday = iday + 1
    end % if a.bytes > 1000000
 end  % giday
+        
+if exist(statsdir) == 0
+    fprintf(1, '>>>> %s does not exist. Creating\n', ...
+            statsdir);
+    mkdir(statsdir);
+end
+
 outfile = fullfile(statsdir, sprintf('rtp_iasi_%s_%4d_rad_%s_%s', ...
            model, year, descriptor, sDescriptor));
 
-eval_str = sprintf('save %s robs rclr *_std *_mean count ', ...
+eval_str = sprintf('save %s trace robs rclr *_std *_mean count -v7.3', ...
                    outfile);
 if ~strcmp(descriptor, 'clear')
-    eval_str = sprintf('save %s robs rclr rcld *_std *_mean count ', ...
+    eval_str = sprintf('save %s trace robs rclr rcld *_std *_mean count -v7.3', ...
                        outfile);
 end
 fprintf(1, '>>> Executing save command: \n\t%s\n', eval_str)

@@ -20,7 +20,7 @@
 #SBATCH -N1
 #SBATCH --mem=18000
 #SBATCH --cpus-per-task 1
-#SBATCH --time=01:30:00
+#SBATCH --time=03:59:00
 # low res has data from 2012 to present: 4 years
 #SBATCH --array=0-7
 #SBATCH --requeue

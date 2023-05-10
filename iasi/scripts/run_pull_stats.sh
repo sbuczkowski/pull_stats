@@ -18,7 +18,7 @@
 #SBATCH --qos=medium+
 #SBATCH --account=pi_strow
 #SBATCH -N1
-#SBATCH --mem=18000
+#SBATCH --mem=28000
 #SBATCH --cpus-per-task=1
 #SBATCH --time=8:00:00
 #SBATCH --array=0-12
@@ -40,7 +40,13 @@ MATOPT=' -nojvm -nodisplay -nosplash'
 JOBSTEP=0
 
 echo "Executing srun of run_pull_stats"
-$MATLAB $MATOPT -r "addpath('~/git/pull_stats/iasi'); run_pull_stats($1); exit"
+$MATLAB $MATOPT -r "addpath('~/git/pull_stats_DEV/iasi');\
+                    addpath('~/git/rtp_prod2_DEV/util');\
+                    addpath('~/git/pull_stats_DEV/util');\
+                    addpath('~/git/pull_stats_DEV/iasi/util');\
+                    cfg=ini2struct('$2');\
+                    run_pull_stats($1, cfg);\
+                    exit"
     
 echo "Finished with srun of run_pull_stats"
 

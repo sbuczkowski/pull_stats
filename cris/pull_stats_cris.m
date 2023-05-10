@@ -74,7 +74,6 @@ end
 basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
                    int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
-% $$$ namefilter = 'cris_sdr_ecmwf_csarta_clear_d20190301.rtp'; 
 % $$$ namefilter = sprintf('%s_rtp_d*_%s.rtp', model, descriptor);
 namefilter = cfg.namefilter;
 fprintf(1, '>> namefilter: %s\n', namefilter)
@@ -187,6 +186,10 @@ for giday = 1:ndays
           k = intersect(dayobs, landobs);
           sDescriptor='asc_land';
       end
+      if length(k) == 0
+          % no obs survive filter so on to next loop iteration
+          continue
+      end
 
       p_filt = rtp_sub_prof(p_rtp, k);
       clear p_rtp
@@ -206,7 +209,11 @@ for giday = 1:ndays
 % $$$       load('/home/sbuczko1/Work/scratch/cris_header')
 % $$$       h = hr;
 % $$$       clear hr
-
+      h.ptype=0;
+      h.pfields=5;
+      h.ngas=2;
+      h.glist=[1;3];
+      h.gunit=[21; 21];
       fprintf(1, '>>> running klayers... ');
       fn_rtp1 = fullfile(sTempPath, ['cris_' sID '_1.rtp']);
       rtpwrite(fn_rtp1, h,ha,p_filt,pa);
@@ -399,10 +406,10 @@ outfile = fullfile(statsdir, sprintf('%s_%s_%s_%s_%4d_%s', ...
            instname, fscale, model, descriptor, year, ...
                                      sDescriptor));
 
-eval_str = sprintf('save %s robs rclr *_std *_mean count -v7.3', ...
+eval_str = sprintf('save %s trace robs rclr *_std *_mean count -v7.3', ...
                    outfile);
 if needscloudfields
-    eval_str = sprintf('save %s robs rclr rcld *_std *_mean count -v7.3', ...
+    eval_str = sprintf('save %s trace robs rclr rcld *_std *_mean count -v7.3', ...
                        outfile);
 end
 fprintf(1, '>> Executing save command: \n\t%s\n', eval_str)

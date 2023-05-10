@@ -37,6 +37,7 @@
 # matlab options
 MATLAB=matlab
 MATOPT=' -nojvm -nodisplay -nosplash'
+which matlab
 
 echo "Executing srun of run_airs_pull_stats"
 $MATLAB $MATOPT -r "addpath('/home/sbuczko1/git/pull_stats_DEV/airs');\

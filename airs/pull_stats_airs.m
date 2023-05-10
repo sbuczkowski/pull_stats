@@ -214,11 +214,11 @@ for giday = 1:ndays
         tmp_dbtun = p_filt.dbtun;
     end
 
-    fprintf(1, '>>> running klayers... ');
     fn_rtp1 = fullfile(sTempPath, ['airs_' sID '_1.rtp']);
+    fn_rtp2 = fullfile(sTempPath, ['airs_' sID '_2.rtp']);
+    fprintf(1, '>>> running klayers : writing output to %s...', fn_rtp2);
     rtpwrite(fn_rtp1, h,ha,p_filt,pa);
     clear p_filt;
-    fn_rtp2 = fullfile(sTempPath, ['airs_' sID '_2.rtp']);
     klayers_run = [klayers_exec ' fin=' fn_rtp1 ' fout=' fn_rtp2 ...
                    ' > ' sTempPath '/kout.txt'];
     unix(klayers_run);
