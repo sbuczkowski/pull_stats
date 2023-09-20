@@ -377,15 +377,15 @@ if exist(statsdir) == 0
     mkdir(statsdir);
 end
 
-outfile = fullfile(statsdir, sprintf('rtp_iasi_%s_%4d_rad_%s_%s', ...
-           model, year, descriptor, sDescriptor));
+outfile = fullfile(statsdir, sprintf('iasi_iasi3_rad_scanangle_%4d_%s_%s', ...
+           year, descriptor, sDescriptor));
 
 eval_str = sprintf('save %s trace robs rclr *_std *_mean count -v7.3', ...
                    outfile);
-if ~strcmp(descriptor, 'clear')
-    eval_str = sprintf('save %s trace robs rclr rcld *_std *_mean count -v7.3', ...
-                       outfile);
-end
+% if ~strcmp(descriptor, 'clear')
+%     eval_str = sprintf('save %s trace robs rclr rcld *_std *_mean count -v7.3', ...
+%                        outfile);
+% end
 fprintf(1, '>>> Executing save command: \n\t%s\n', eval_str)
 eval(eval_str);
 

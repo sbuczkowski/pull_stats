@@ -10,6 +10,8 @@ switch cfg.instname
     baseyear = 2012;
   case 'j01'
     baseyear = 2018;
+  case 'j02'
+    baseyear = 2023;
   otherwise
     error('Improper instrument name in configuration')
 end

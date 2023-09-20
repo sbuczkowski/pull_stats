@@ -37,7 +37,7 @@ if isfield(cfg, 'model')
     model = cfg.model;
 end
 
-instName = 'airicrad'; 
+instName = cfg.instname; 
 
 rtpsrcdir = sprintf('/asl/rtp/rtp_airicrad_v6');
 if isfield(cfg, 'rtpsrcdir')
@@ -410,8 +410,8 @@ for giday = 1:ndays
     
         iday = iday + 1
 end  % giday
-outfile = fullfile(statsdir, sprintf('rtp_%s_%s_rad_kl_%4d_%s_%s', ...
-                                     instName, model, year, descriptor, ...
+outfile = fullfile(statsdir, sprintf('airs_%s_rad_scanangle_%4d_%s_%s', ...
+                                     instName, year, descriptor, ...
                                      sDescriptor));
 
 if bIncludeCalcs
