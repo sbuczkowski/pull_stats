@@ -161,8 +161,8 @@ for giday = 1:ndays
        [h,ha,p_rtp,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
       
 
-       nightobs = find(p_rtp.iudef(4,:) == 1);
-       dayobs = find(p_rtp.iudef(4,:) == 0);
+       nightobs = find(p_rtp.iudef(4,:) == 0);
+       dayobs = find(p_rtp.iudef(4,:) == 1);
        landobs = find(p_rtp.landfrac == 1);
        oceanobs = find(p_rtp.landfrac == 0);
 
