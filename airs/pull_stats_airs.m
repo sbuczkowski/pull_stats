@@ -166,29 +166,29 @@ for giday = 1:ndays
     [h,ha,p_rtp,pa] = rtpread(fullfile(basedir,dayfiles(giday).name));
     
 
-    nightobs = find(p_rtp.iudef(4,:) == 68);
-    dayobs = find(p_rtp.iudef(4,:) == 65);
+    ascobs = find(p_rtp.iudef(4,:) == 65); % day
+    descobs = find(p_rtp.iudef(4,:) == 68); % night
     landobs = find(p_rtp.landfrac == 1);
     oceanobs = find(p_rtp.landfrac == 0);
 
     switch filter
       case 1 % descending node (night), global
-        k = nightobs;
+        k = descobs;
         sDescriptor='desc';
       case 2 % descending node (night), ocean
-        k = intersect(nightobs, oceanobs);
+        k = intersect(descobs, oceanobs);
         sDescriptor='desc_ocean';
       case 3 % descending node (night), land
-        k = intersect(nightobs, landobs);
+        k = intersect(descobs, landobs);
         sDescriptor='desc_land';
       case 4 % ascending node (day)
-        k = dayobs;
+        k = ascobs;
         sDescriptor='asc';
       case 5 % ascending node (day), ocean
-        k = intersect(dayobs, oceanobs);
+        k = intersect(ascobs, oceanobs);
         sDescriptor='asc_ocean';
       case 6 % ascending node (day), land
-        k = intersect(dayobs, landobs);
+        k = intersect(ascobs, landobs);
         sDescriptor='asc_land';
     end
 

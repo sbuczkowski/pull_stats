@@ -129,30 +129,30 @@ for giday = 1:ndays
        [h,ha,p_rtp,pa] = rtpread_12(fullfile(basedir,dayfiles(giday).name));
       
 
-       nightobs = find(p_rtp.iudef(4,:) == 0);  % opposite orbital
+       ascobs = find(p_rtp.iudef(4,:) == 0);  % opposite orbital
                                             % sense to AIRS and CrIS
-       dayobs = find(p_rtp.iudef(4,:) == 1);
+       descobs = find(p_rtp.iudef(4,:) == 1);
        landobs = find(p_rtp.landfrac == 1);
        oceanobs = find(p_rtp.landfrac == 0);
 
       switch filter
-        case 1 % descending node (night), global
-          k = nightobs;
+        case 1 % ascending node (night), global
+          k = ascobs;
           sDescriptor='desc';
-        case 2 % descending node (night), ocean
-          k = intersect(nightobs, oceanobs);
+        case 2 % ascending node (night), ocean
+          k = intersect(ascobs, oceanobs);
           sDescriptor='desc_ocean';
-        case 3 % descending node (night), land
-          k = intersect(nightobs, landobs);
+        case 3 % ascending node (night), land
+          k = intersect(ascobs, landobs);
           sDescriptor='desc_land';
-        case 4 % ascending node (day)
-          k = dayobs;
+        case 4 % descending node (day)
+          k = descobs;
           sDescriptor='asc';
-        case 5 % ascending node (day), ocean
-          k = intersect(dayobs, oceanobs);
+        case 5 % descending node (day), ocean
+          k = intersect(descobs, oceanobs);
           sDescriptor='asc_ocean';
-        case 6 % ascending node (day), land
-          k = intersect(dayobs, landobs);
+        case 6 % descending node (day), land
+          k = intersect(descobs, landobs);
           sDescriptor='asc_land';
       end
 
