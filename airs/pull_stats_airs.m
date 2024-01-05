@@ -88,10 +88,10 @@ nlatbins = length(latbin_edges)-1;
 nlevs = 101;  % klayers output
 
 % allocate final accumulator arrays for common variables
-robs = nan(ndays, nlatbins, nchans);
+robs_mean = nan(ndays, nlatbins, nchans);
 
 if bIncludeCalcs
-    rclr = nan(ndays, nlatbins, nchans);
+    rclr_mean = nan(ndays, nlatbins, nchans);
     rclrbias_std = nan(ndays, nlatbins, nchans);
 end
 
@@ -128,7 +128,7 @@ else
     % add in random/site/dcc specific variables (basically stuff that
     % tags along with sarta_cloudy runs)
     if bIncludeCalcs
-        rcld = nan(ndays, nlatbins, nchans);
+        rcld_mean = nan(ndays, nlatbins, nchans);
         rcldbias_std = nan(ndays, nlatbins, nchans);
     end
 
