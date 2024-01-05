@@ -370,12 +370,12 @@ for giday = 1:ndays
               r = box_to_ham(p_infov.robs1);  % assumes r in freq order!!  Needed
                                   % for lowres
 
-              robs(iday,ilat,z,:) = nanmean(r,2);
-              rclr(iday,ilat,z,:) = nanmean(p_infov.rclr,2);
+              robs_mean(iday,ilat,z,:) = nanmean(r,2);
+              rclr_mean(iday,ilat,z,:) = nanmean(p_infov.rclr,2);
               rclrbias_std(iday, ilat,z,:) = nanstd(r-p_infov.rclr,0,2);
 
               if needscloudfields
-                  rcld(iday,ilat,z,:) = nanmean(p_infov.rcld,2);
+                  rcld_mean(iday,ilat,z,:) = nanmean(p_infov.rcld,2);
                   rcldbias_std(iday, ilat,z,:) = nanstd(r-p_infov.rcld,0, ...
                                                       2);
               end
@@ -406,10 +406,10 @@ outfile = fullfile(statsdir, sprintf('cris_%s_%s_rad_scanangle_%4d_%s_%s', ...
            instname, fscale, year, descriptor, ...
                                      sDescriptor));
 
-eval_str = sprintf('save %s trace robs rclr *_std *_mean count -v7.3', ...
+eval_str = sprintf('save %s trace *_std *_mean count -v7.3', ...
                    outfile);
 if needscloudfields
-    eval_str = sprintf('save %s trace robs rclr rcld *_std *_mean count -v7.3', ...
+    eval_str = sprintf('save %s trace *_std *_mean count -v7.3', ...
                        outfile);
 end
 fprintf(1, '>> Executing save command: \n\t%s\n', eval_str)

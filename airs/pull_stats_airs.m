@@ -13,10 +13,8 @@ fprintf(1, '>> TempPath: %s\n', sTempPath)
 % record run start datetime in output stats file for tracking
 trace.RunDate = datetime('now','TimeZone','local','Format', ...
                          'd-MMM-y HH:mm:ss Z');
-trace.Reason = 'Normal pull_stats runs';
-if isfield(cfg, 'reason')
-    trace.Reason = cfg.reason;
-end
+assert(isfield(cfg, 'reason'))
+trace.Reason = cfg.reason;
 
 bRunKlayers = true;
 klayers_exec = ['/asl/packages/klayersV205/BinV201/' ...
@@ -370,13 +368,13 @@ for giday = 1:ndays
         end
         
         r = p_inbin.robs1;
-        robs(iday,ilat,:) = nanmean(r,2);
+        robs_mean(iday,ilat,:) = nanmean(r,2);
         if bIncludeCalcs
-            rclr(iday,ilat,:) = nanmean(p_inbin.rclr,2);
+            rclr_mean(iday,ilat,:) = nanmean(p_inbin.rclr,2);
             rclrbias_std(iday, ilat,:) = nanstd(r-p_inbin.rclr,0, ...
                                                 2);
             if ~strcmp(descriptor, 'clear')
-                rcld(iday,ilat,:) = nanmean(p_inbin.rcld,2);
+                rcld_mean(iday,ilat,:) = nanmean(p_inbin.rcld,2);
                 rcldbias_std(iday, ilat,:) = nanstd(r-p_inbin.rcld,0, ...
                                                     2);
             end
@@ -410,19 +408,19 @@ for giday = 1:ndays
     
         iday = iday + 1
 end  % giday
-outfile = fullfile(statsdir, sprintf('airs_%s_rad_scanangle_%4d_%s_%s', ...
-                                     instName, year, descriptor, ...
+outfile = fullfile(statsdir, sprintf('rtp_airicrad_rad_kl_scanangle_%4d_%s_%s', ...
+                                     year, descriptor, ...
                                      sDescriptor));
 
 if bIncludeCalcs
-    eval_str = sprintf('save %s robs rclr *_std *_mean count trace -v7.3', ...
+    eval_str = sprintf('save %s *_std *_mean count trace -v7.3', ...
                    outfile);
     if ~strcmp(descriptor, 'clear')
-        eval_str = sprintf('save %s robs rclr rcld *_std *_mean count trace -v7.3', ...
+        eval_str = sprintf('save %s *_std *_mean count trace -v7.3', ...
                            outfile);
     end
 else
-    eval_str = sprintf('save %s robs *_mean count trace -v7.3', ...
+    eval_str = sprintf('save %s *_mean count trace -v7.3', ...
                    outfile);
 end
 
