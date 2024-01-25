@@ -65,11 +65,19 @@ end
 basedir = fullfile(rtpsrcdir, sprintf('%s', descriptor), ...
                    int2str(year));
 fprintf(1, '>> Basedir: %s\n', basedir);
-% era_airicrad_day241_clear.rtp
-namefilter = sprintf('%s_airicrad_d*_%s.rtp', model, descriptor);
-fprintf(1, '>> namefilter: %s\n', namefilter)
-dayfiles = dir(fullfile(basedir, namefilter));
 
+namefilter = sprintf('*_airicrad_d*_%s.rtp', descriptor);
+fprintf(1, '>> namefilter: %s\n', namefilter)
+usdayfiles = dir(fullfile(basedir, namefilter));
+
+% force day numerical order onto file list
+daynum = zeros(length(usdayfiles), 'int16');
+for i=1:length(usdayfiles)
+    daynum(i) = str2num(cell2mat(regexp(usdayfiles(i).name, '\d{3}', 'match')));
+end
+[B,I] = sort(daynum);
+dayfiles = usdayfiles(I);
+clear usdayfiles
 
 ndays = length(dayfiles);
 fprintf(1,'>>> numfiles = %d\n', ndays);
